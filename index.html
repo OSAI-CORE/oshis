@@ -4350,10 +4350,17 @@ and (orientation: portrait) {
                        placeholder="••••••">
             </div>
 
-            <label class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer">
-                <input type="checkbox" id="editor-enabled-check" class="w-4 h-4 accent-indigo-600">
-                <span class="text-sm font-bold text-slate-700">啟用使用者共用權限</span>
-            </label>
+<label class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+    <input
+        type="checkbox"
+        id="editor-enabled-check"
+        class="w-4 h-4 accent-indigo-600"
+        disabled
+    >
+    <span class="text-sm font-bold text-slate-700">
+        啟用使用者共用權限
+    </span>
+</label>
 
             <p class="text-[11px] text-slate-400 leading-snug">
                 使用者權限可上傳照片、AI 識別、編輯、儲存、載入資料與匯出資料；刪除與權限設定仍限管理者。
@@ -5117,14 +5124,21 @@ and (orientation: portrait) {
     <script>
 const DEFAULT_ADMIN_PASSWORD = "SamCore@1068";
 const DEFAULT_EDITOR_PASSWORD = "TeamUser001";
+const DEFAULT_EDITOR_ENABLED = true;
+
 const MASTER_RECOVERY_CODE = "SAM-SUN-CORE-RECOVERY";
 
 let isAdmin = false;
 let isEditor = false;
-let editorEnabled = true;
 
-let systemPassword = DEFAULT_ADMIN_PASSWORD;
-let editorPassword = DEFAULT_EDITOR_PASSWORD;
+let editorEnabled =
+    DEFAULT_EDITOR_ENABLED;
+
+let systemPassword =
+    DEFAULT_ADMIN_PASSWORD;
+
+let editorPassword =
+    DEFAULT_EDITOR_PASSWORD;
 
 let db;
 let currentReportData = { hazards: [], suggestions: [] };
@@ -5138,6 +5152,30 @@ let annotationMode = null; // null / "manual" / "edit-box"
 let pendingManualBox = null;
 let previewReports = null;
 let previewCategories = null;
+
+/*
+ * 正式資料只存在目前網頁工作階段。
+ * JSON 為正式延續資料來源。
+ */
+const DEFAULT_CATEGORIES = [
+    {
+        id: 1,
+        name: "一般查核"
+    }
+];
+
+let sessionReports = [];
+
+let sessionCategories = [
+    {
+        id: 1,
+        name: "一般查核"
+    }
+];
+
+let sessionInspectionReports = [];
+
+let sessionInspectionAttachments = [];
 
 let previewInspectionReports = null;
 let previewInspectionAttachments = null;
@@ -5154,6 +5192,87 @@ let pendingInspectionAttachmentFiles = [];
  * }
  */
 let inspectionUnitFilterByYear = {};
+
+/* =========================================================
+   本次工作階段資料工具
+========================================================= */
+
+function cloneSessionData(value) {
+    return JSON.parse(
+        JSON.stringify(value)
+    );
+}
+
+function resetFormalSessionData() {
+    sessionReports = [];
+
+    sessionCategories =
+        cloneSessionData(
+            DEFAULT_CATEGORIES
+        );
+
+    sessionInspectionReports = [];
+
+    sessionInspectionAttachments = [];
+}
+
+function getNextSessionId(records) {
+    const maxId =
+        records.reduce(
+            (maxValue, item) => {
+                const id =
+                    Number(item?.id);
+
+                if (
+                    Number.isInteger(id) &&
+                    id > maxValue
+                ) {
+                    return id;
+                }
+
+                return maxValue;
+            },
+            0
+        );
+
+    return maxId + 1;
+}
+
+function upsertSessionRecord(
+    records,
+    record
+) {
+    const copy =
+        cloneSessionData(record);
+
+    const currentId =
+        Number(copy.id);
+
+    if (
+        !Number.isInteger(currentId) ||
+        currentId <= 0
+    ) {
+        copy.id =
+            getNextSessionId(records);
+    } else {
+        copy.id = currentId;
+    }
+
+    const index =
+        records.findIndex(
+            item =>
+                Number(item.id) ===
+                Number(copy.id)
+        );
+
+    if (index >= 0) {
+        records[index] = copy;
+    } else {
+        records.push(copy);
+    }
+
+    return copy;
+}
 
 function pushUndoState() {
     if (!currentReportData) return;
@@ -5228,7 +5347,7 @@ function showToast(message, type = "success") {
 
 /* =========================================================
    清除目前危害識別工作畫面
-   不會刪除 IndexedDB 正式資料
+   不會直接修改目前工作階段正式資料
 ========================================================= */
 function clearCurrentHazardWorkspace() {
     base64Image = "";
@@ -5365,7 +5484,7 @@ function clearCurrentHazardWorkspace() {
 
 /* =========================================================
    清除預覽者全部暫存資料
-   不會清除正式 IndexedDB 資料
+   不直接修改管理者／使用者工作階段正式資料
 ========================================================= */
 async function clearViewerWorkingData() {
     previewReports = null;
@@ -5652,58 +5771,97 @@ const initDB = () => {
     });
 };
 
+/* =========================================================
+   清除舊版 IndexedDB 正式資料與權限設定
+========================================================= */
+
+async function clearPersistedHazardSystemData() {
+    if (!db) {
+        return;
+    }
+
+    const targetStores = [
+        "settings",
+        "categories",
+        "reports",
+        "inspectionReports",
+        "inspectionAttachments"
+    ].filter(
+        storeName =>
+            db.objectStoreNames.contains(
+                storeName
+            )
+    );
+
+    if (targetStores.length === 0) {
+        return;
+    }
+
+    return new Promise(
+        (resolve, reject) => {
+            const tx =
+                db.transaction(
+                    targetStores,
+                    "readwrite"
+                );
+
+            targetStores.forEach(
+                storeName => {
+                    tx.objectStore(
+                        storeName
+                    ).clear();
+                }
+            );
+
+            tx.oncomplete =
+                () => resolve();
+
+            tx.onerror =
+                () => reject(
+                    tx.error ||
+                    new Error(
+                        "清除舊版本本機資料失敗"
+                    )
+                );
+
+            tx.onabort =
+                () => reject(
+                    tx.error ||
+                    new Error(
+                        "清除舊版本本機資料已中止"
+                    )
+                );
+        }
+    );
+}
+
 async function checkInitConfig() {
-    const tx = db.transaction(["settings"], "readwrite");
-    const store = tx.objectStore("settings");
+    /*
+     * 正式權限一律以 GitHub HTML
+     * DEFAULT_* 為準。
+     */
+    systemPassword =
+        DEFAULT_ADMIN_PASSWORD;
 
-    const adminPwd = await new Promise(r => {
-        const req = store.get("adminPwd");
-        req.onsuccess = () => r(req.result);
-    });
+    editorPassword =
+        DEFAULT_EDITOR_PASSWORD;
 
-    const editorPwd = await new Promise(r => {
-        const req = store.get("editorPwd");
-        req.onsuccess = () => r(req.result);
-    });
+    editorEnabled =
+        DEFAULT_EDITOR_ENABLED;
 
-    const editorEnabledValue = await new Promise(r => {
-        const req = store.get("editorEnabled");
-        req.onsuccess = () => r(req.result);
-    });
+    /*
+     * 每次重新開啟或 F5，
+     * 都建立乾淨工作階段。
+     */
+    resetFormalSessionData();
 
-    if (!adminPwd || adminPwd === "1068") {
-        systemPassword = DEFAULT_ADMIN_PASSWORD;
-        store.put(DEFAULT_ADMIN_PASSWORD, "adminPwd");
-    } else {
-        systemPassword = adminPwd;
-    }
+    /*
+     * 清除舊版 IndexedDB
+     * 可能殘留的正式資料與權限。
+     */
+    await clearPersistedHazardSystemData();
 
-    if (!editorPwd) {
-        editorPassword = DEFAULT_EDITOR_PASSWORD;
-        store.put(DEFAULT_EDITOR_PASSWORD, "editorPwd");
-    } else {
-        editorPassword = editorPwd;
-    }
-
-    if (typeof editorEnabledValue === "undefined") {
-        editorEnabled = true;
-        store.put(true, "editorEnabled");
-    } else {
-        editorEnabled = Boolean(editorEnabledValue);
-    }
-
-    const catTx = db.transaction(["categories"], "readonly");
-    const count = await new Promise(r => {
-        const req = catTx.objectStore("categories").count();
-        req.onsuccess = () => r(req.result);
-    });
-
-    if (count === 0) {
-        const writeTx = db.transaction(["categories"], "readwrite");
-        writeTx.objectStore("categories").add({ name: "一般查核" });
-    }
-
-    refreshCategories();
+    await refreshCategories();
 }
 
         const elements = {
@@ -5787,7 +5945,10 @@ function showModal(id) {
         document.getElementById('old-pwd').value = "";
         document.getElementById('new-pwd').value = "";
         document.getElementById('editor-pwd-input').value = "";
-        document.getElementById('editor-enabled-check').checked = editorEnabled;
+        document.getElementById(
+    'editor-enabled-check'
+).checked =
+    DEFAULT_EDITOR_ENABLED;
 
         const err = document.getElementById('pwd-change-error');
         if (err) {
@@ -5811,223 +5972,343 @@ document.getElementById(
     "logout-btn"
 ).onclick = async () => {
 
-    /*
-     * 登出前只保留一層確認視窗。
-     */
-    const confirmed = confirm(
-        "確定要登出目前模式嗎？"
-    );
+    const confirmed =
+        confirm(
+            "確定要登出目前模式嗎？\n\n" +
+            "尚未匯出的變更將在登出後清除，" +
+            "請確認已先匯出最新 JSON。"
+        );
 
     if (!confirmed) {
         return;
     }
 
+    try {
+        await clearPersistedHazardSystemData();
+    } catch (error) {
+        console.error(error);
+
+        showToast(
+            "清除本機暫存資料失敗，請重新整理後再試。",
+            "error"
+        );
+
+        return;
+    }
+
+    /*
+     * 清除目前正式工作階段。
+     */
+    resetFormalSessionData();
+
+    /*
+     * 恢復 GitHub HTML
+     * 正式權限設定。
+     */
+    systemPassword =
+        DEFAULT_ADMIN_PASSWORD;
+
+    editorPassword =
+        DEFAULT_EDITOR_PASSWORD;
+
+    editorEnabled =
+        DEFAULT_EDITOR_ENABLED;
+
     isAdmin = false;
     isEditor = false;
 
     document.body.classList.remove(
-        "is-admin"
-    );
-
-    document.body.classList.remove(
+        "is-admin",
         "is-editor"
     );
 
-    /*
-     * 清除目前工作畫面，
-     * 回到空白預覽者模式。
-     *
-     * 不會刪除 IndexedDB 正式資料。
-     */
     await clearViewerWorkingData();
 
-    /*
-     * 登出完成後改用右下角通知，
-     * 不再跳出第二層需要點擊的 alert。
-     */
     showToast(
         "已完成登出。"
     );
 };
 
 async function verifyLogin() {
-    const inputPwd = elements.pwdInput.value.trim();
+    const inputPwd =
+        elements.pwdInput.value.trim();
 
-    if (inputPwd === MASTER_RECOVERY_CODE) {
-        const tx = db.transaction(["settings"], "readwrite");
-        const store = tx.objectStore("settings");
+    /*
+     * MASTER RECOVERY
+     */
+    if (
+        inputPwd ===
+        MASTER_RECOVERY_CODE
+    ) {
+        systemPassword =
+            DEFAULT_ADMIN_PASSWORD;
 
-        store.put(DEFAULT_ADMIN_PASSWORD, "adminPwd");
-        store.put(DEFAULT_EDITOR_PASSWORD, "editorPwd");
-        store.put(true, "editorEnabled");
+        editorPassword =
+            DEFAULT_EDITOR_PASSWORD;
 
-        systemPassword = DEFAULT_ADMIN_PASSWORD;
-        editorPassword = DEFAULT_EDITOR_PASSWORD;
-        editorEnabled = true;
+        editorEnabled =
+            DEFAULT_EDITOR_ENABLED;
 
-isAdmin = false;
-isEditor = false;
+        isAdmin = false;
+        isEditor = false;
 
-document.body.classList.remove('is-admin');
-document.body.classList.remove('is-editor');
+        document.body.classList.remove(
+            "is-admin",
+            "is-editor"
+        );
 
-elements.pwdInput.value = "";
+        resetFormalSessionData();
 
-alert("權限設定已恢復預設值，請重新登入。");
-        closeModals();
-updateUIVisibility();
-updateDataActionButtons();
-refreshCategories();
-renderHazards();
-renderSuggestions();
-return;
+        await clearPersistedHazardSystemData();
+        await clearViewerWorkingData();
+
+        elements.pwdInput.value = "";
+
+        alert(
+            "權限設定已恢復預設值，請重新登入。"
+        );
+
+        return;
     }
 
-    if (inputPwd === systemPassword) {
+    /*
+     * 管理者登入
+     */
+    if (
+        inputPwd ===
+        systemPassword
+    ) {
         isAdmin = true;
         isEditor = true;
 
-    previewReports = null;
-    previewCategories = null;
+        previewReports = null;
+        previewCategories = null;
+        previewInspectionReports = null;
+        previewInspectionAttachments = null;
 
-    previewInspectionReports = null;
-    previewInspectionAttachments = null;        
+        document.body.classList.add(
+            "is-admin"
+        );
 
-document.body.classList.add(
-    "is-admin"
-);
+        document.body.classList.remove(
+            "is-editor"
+        );
 
-document.body.classList.remove(
-    "is-editor"
-);
+        closeModals();
 
-closeModals();
+        elements.pwdInput.value = "";
 
-elements.pwdInput.value = "";
+        updateUIVisibility();
+        updateDataActionButtons();
 
-updateUIVisibility();
-updateDataActionButtons();
-refreshCategories();
-renderHazards();
-renderSuggestions();
+        await refreshCategories();
+        await loadHistory();
 
-/* 管理者登入成功通知 */
-showToast(
-    "已進入管理者模式。"
-);
+        if (
+            currentHistoryTab ===
+            "inspection"
+        ) {
+            await loadInspectionHistory();
+        }
 
-return;
+        renderHazards();
+        renderSuggestions();
+
+        showToast(
+            "已進入管理者模式。"
+        );
+
+        return;
     }
 
-    if (inputPwd === editorPassword) {
+    /*
+     * 使用者登入
+     */
+    if (
+        inputPwd ===
+        editorPassword
+    ) {
         if (!editorEnabled) {
-            alert("使用者共用權限目前已停用，請洽管理者。");
+            alert(
+                "使用者共用權限目前已停用，請洽管理者。"
+            );
             return;
         }
 
         isAdmin = false;
         isEditor = true;
 
-    previewReports = null;
-    previewCategories = null;
+        previewReports = null;
+        previewCategories = null;
+        previewInspectionReports = null;
+        previewInspectionAttachments = null;
 
-    previewInspectionReports = null;
-    previewInspectionAttachments = null;        
+        document.body.classList.remove(
+            "is-admin"
+        );
 
-document.body.classList.remove(
-    "is-admin"
-);
+        document.body.classList.add(
+            "is-editor"
+        );
 
-document.body.classList.add(
-    "is-editor"
-);
+        closeModals();
 
-closeModals();
+        elements.pwdInput.value = "";
 
-elements.pwdInput.value = "";
+        updateUIVisibility();
+        updateDataActionButtons();
 
-updateUIVisibility();
-updateDataActionButtons();
-refreshCategories();
-renderHazards();
-renderSuggestions();
+        await refreshCategories();
+        await loadHistory();
 
-/* 使用者登入成功通知 */
-showToast(
-    "已進入使用者模式。"
-);
+        if (
+            currentHistoryTab ===
+            "inspection"
+        ) {
+            await loadInspectionHistory();
+        }
 
-return;
+        renderHazards();
+        renderSuggestions();
+
+        showToast(
+            "已進入使用者模式。"
+        );
+
+        return;
     }
 
-    const loginError = document.getElementById('login-error');
-if (loginError) loginError.classList.remove('hidden');
-showToast("驗證密碼錯誤", "error");
+    const loginError =
+        document.getElementById(
+            "login-error"
+        );
+
+    if (loginError) {
+        loginError.classList.remove(
+            "hidden"
+        );
+    }
+
+    showToast(
+        "驗證密碼錯誤",
+        "error"
+    );
 }
         document.getElementById('do-login').onclick = verifyLogin;
         elements.pwdInput.onkeydown = (e) => { if (e.key === 'Enter') verifyLogin(); };
 
-elements.doChangePwd.onclick = async () => {
-    const err = document.getElementById('pwd-change-error');
+elements.doChangePwd.onclick =
+async () => {
+    const err =
+        document.getElementById(
+            "pwd-change-error"
+        );
+
     if (err) {
         err.innerText = "";
-        err.classList.add('hidden');
+        err.classList.add(
+            "hidden"
+        );
     }
 
     if (!canChangePassword()) {
         if (err) {
-            err.innerText = "請先以管理者登入";
-            err.classList.remove('hidden');
+            err.innerText =
+                "請先以管理者登入";
+
+            err.classList.remove(
+                "hidden"
+            );
         }
-        return alert("只有管理者可以修改權限與密碼設定。");
+
+        return alert(
+            "只有管理者可以修改權限與密碼設定。"
+        );
     }
 
-    const oldPwd = document.getElementById('old-pwd').value;
-    const newAdminPwd = document.getElementById('new-pwd').value.trim();
-    const newEditorPwd = document.getElementById('editor-pwd-input').value.trim();
-    const editorEnabledNext = document.getElementById('editor-enabled-check').checked;
+    const oldPwd =
+        document.getElementById(
+            "old-pwd"
+        ).value;
+
+    const newAdminPwd =
+        document.getElementById(
+            "new-pwd"
+        ).value.trim();
+
+    const newEditorPwd =
+        document.getElementById(
+            "editor-pwd-input"
+        ).value.trim();
 
     if (newAdminPwd) {
         if (!oldPwd) {
             if (err) {
-                err.innerText = "修改管理者密碼時，請先輸入目前管理者密碼";
-                err.classList.remove('hidden');
+                err.innerText =
+                    "修改管理者密碼時，請先輸入目前管理者密碼";
+
+                err.classList.remove(
+                    "hidden"
+                );
             }
+
             return;
         }
 
-        if (oldPwd !== systemPassword) {
+        if (
+            oldPwd !==
+            systemPassword
+        ) {
             if (err) {
-                err.innerText = "目前管理者密碼不正確";
-                err.classList.remove('hidden');
+                err.innerText =
+                    "目前管理者密碼不正確";
+
+                err.classList.remove(
+                    "hidden"
+                );
             }
+
             return;
         }
-    }
 
-    const tx = db.transaction(["settings"], "readwrite");
-    const store = tx.objectStore("settings");
-
-    if (newAdminPwd) {
-        systemPassword = newAdminPwd;
-        store.put(newAdminPwd, "adminPwd");
+        /*
+         * 僅修改本次工作階段。
+         */
+        systemPassword =
+            newAdminPwd;
     }
 
     if (newEditorPwd) {
-        editorPassword = newEditorPwd;
-        store.put(newEditorPwd, "editorPwd");
+        /*
+         * 僅修改本次工作階段。
+         */
+        editorPassword =
+            newEditorPwd;
     }
 
-    editorEnabled = editorEnabledNext;
-    store.put(editorEnabled, "editorEnabled");
+    /*
+     * 使用者正式開關由 GitHub HTML 控制。
+     */
+    editorEnabled =
+        DEFAULT_EDITOR_ENABLED;
 
     closeModals();
 
-    document.getElementById('old-pwd').value = "";
-    document.getElementById('new-pwd').value = "";
-    document.getElementById('editor-pwd-input').value = "";
+    document.getElementById(
+        "old-pwd"
+    ).value = "";
 
-    alert("權限與密碼設定已更新成功！");
+    document.getElementById(
+        "new-pwd"
+    ).value = "";
+
+    document.getElementById(
+        "editor-pwd-input"
+    ).value = "";
+
+    alert(
+        "權限與密碼設定已更新成功！"
+    );
 };
 
 function normalizeHazardData() {
@@ -6242,73 +6523,75 @@ function generateTemporaryInspectionNo(dateValue = "") {
     return `OSH-INS-${year}-${timestampTail}`;
 }
 
-async function generateFormalInspectionNo(year) {
-    const tx = db.transaction(
-        ["inspectionReports"],
-        "readonly"
-    );
+async function generateFormalInspectionNo(
+    year
+) {
+    const reports =
+        sessionInspectionReports;
 
-    const store = tx.objectStore("inspectionReports");
+    const yearPrefix =
+        `OSH-INS-${year}-`;
 
-    const reports = await new Promise((resolve, reject) => {
-        const request = store.getAll();
+    const usedNumbers =
+        reports
+            .filter(report =>
+                String(
+                    report.caseNo || ""
+                ).startsWith(
+                    yearPrefix
+                )
+            )
+            .map(report => {
+                const tail =
+                    String(
+                        report.caseNo
+                    )
+                    .split("-")
+                    .pop();
 
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-
-    const yearPrefix = `OSH-INS-${year}-`;
-
-    const usedNumbers = reports
-        .filter(report =>
-            String(report.caseNo || "").startsWith(yearPrefix)
-        )
-        .map(report => {
-            const tail = String(report.caseNo).split("-").pop();
-            return Number(tail);
-        })
-        .filter(number => Number.isInteger(number));
+                return Number(tail);
+            })
+            .filter(number =>
+                Number.isInteger(
+                    number
+                )
+            );
 
     const nextNumber =
         usedNumbers.length > 0
-            ? Math.max(...usedNumbers) + 1
+            ? Math.max(
+                ...usedNumbers
+            ) + 1
             : 1;
 
-    return `${yearPrefix}${String(nextNumber).padStart(3, "0")}`;
+    return (
+        `${yearPrefix}` +
+        `${String(nextNumber).padStart(3, "0")}`
+    );
 }
 
-async function findInspectionBySourceReportId(sourceReportId) {
-    if (!Number.isInteger(sourceReportId)) {
+async function findInspectionBySourceReportId(
+    sourceReportId
+) {
+    if (
+        !Number.isInteger(
+            sourceReportId
+        )
+    ) {
         return null;
     }
 
-    const tx = db.transaction(
-        ["inspectionReports"],
-        "readonly"
+    return (
+        sessionInspectionReports.find(
+            report =>
+                Number(
+                    report.sourceReportId
+                ) ===
+                Number(
+                    sourceReportId
+                )
+        ) || null
     );
-
-    const reports = await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore("inspectionReports").getAll();
-
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-
-    return reports.find(report =>
-        Number(report.sourceReportId) ===
-        Number(sourceReportId)
-    ) || null;
 }
 
 async function openInspectionCreateModal() {
@@ -6952,13 +7235,16 @@ async function saveInspectionReport() {
     }
 
     try {
-        const reportToSave = JSON.parse(
-            JSON.stringify(currentInspectionDraft)
-        );
+        const reportToSave =
+            cloneSessionData(
+                currentInspectionDraft
+            );
 
         const year =
-            String(reportToSave.inspectionDate || "")
-                .split("-")[0];
+            String(
+                reportToSave.inspectionDate ||
+                ""
+            ).split("-")[0];
 
         if (!year) {
             showToast(
@@ -6968,71 +7254,67 @@ async function saveInspectionReport() {
             return;
         }
 
-        reportToSave.year = Number(year);
-reportToSave.yearFolder =
-    formatInspectionYearText(
-        reportToSave.yearFolder ||
-        reportToSave.year,
-        reportToSave.inspectionDate
-    ) ||
-    `${year}年`;
+        reportToSave.year =
+            Number(year);
+
+        reportToSave.yearFolder =
+            formatInspectionYearText(
+                reportToSave.yearFolder ||
+                reportToSave.year,
+                reportToSave.inspectionDate
+            ) ||
+            `${year}年`;
 
         const isExistingReport =
-            Number.isInteger(reportToSave.id);
+            Number.isInteger(
+                Number(
+                    reportToSave.id
+                )
+            ) &&
+            Number(
+                reportToSave.id
+            ) > 0;
 
         if (!isExistingReport) {
             reportToSave.caseNo =
-                await generateFormalInspectionNo(year);
+                await generateFormalInspectionNo(
+                    year
+                );
 
             reportToSave.createdAt =
-                reportToSave.createdAt || Date.now();
+                reportToSave.createdAt ||
+                Date.now();
+
+            delete reportToSave.id;
         }
 
-        reportToSave.updatedAt = Date.now();
+        reportToSave.updatedAt =
+            Date.now();
 
-        const tx = db.transaction(
-            ["inspectionReports"],
-            "readwrite"
+        const savedReport =
+            upsertSessionRecord(
+                sessionInspectionReports,
+                reportToSave
+            );
+
+        currentInspectionDraft =
+            cloneSessionData(
+                savedReport
+            );
+
+        document.getElementById(
+            "inspection-case-no"
+        ).value =
+            savedReport.caseNo;
+
+        renderInspectionDocument(
+            currentInspectionDraft
         );
 
-        const store =
-            tx.objectStore("inspectionReports");
+        showToast(
+            "改善單已儲存完成。"
+        );
 
-        let request;
-
-        if (isExistingReport) {
-            request = store.put(reportToSave);
-        } else {
-            delete reportToSave.id;
-            request = store.add(reportToSave);
-        }
-
-        request.onsuccess = event => {
-            if (!isExistingReport) {
-                reportToSave.id = event.target.result;
-            }
-
-            currentInspectionDraft = reportToSave;
-
-            document.getElementById(
-                "inspection-case-no"
-            ).value = reportToSave.caseNo;
-
-            renderInspectionDocument(
-                currentInspectionDraft
-            );
-        };
-
-        tx.oncomplete = () => {
-            showToast("改善單已儲存完成。");
-        };
-
-        tx.onerror = () => {
-            showToast(
-                "改善單儲存失敗，請重新操作。",
-                "error"
-            );
-        };
     } catch (error) {
         console.error(error);
 
@@ -7438,33 +7720,42 @@ async function syncCurrentReportTitleToHistory() {
     if (!currentReportId) return;
     if (!elements.reportNameInput) return;
 
-    const newTitle = elements.reportNameInput.value.trim();
+    const newTitle =
+        elements.reportNameInput.value.trim();
+
     if (!newTitle) return;
 
-    const tx = db.transaction(["reports"], "readwrite");
-    const store = tx.objectStore("reports");
-
-    const report = await new Promise(r => {
-        const req = store.get(currentReportId);
-        req.onsuccess = () => r(req.result);
-        req.onerror = () => r(null);
-    });
+    const report =
+        sessionReports.find(
+            item =>
+                Number(item.id) ===
+                Number(
+                    currentReportId
+                )
+        );
 
     if (!report) return;
 
-    if (report.title === newTitle) return;
+    if (
+        report.title ===
+        newTitle
+    ) {
+        return;
+    }
 
-    report.title = newTitle;
-    store.put(report);
+    report.title =
+        newTitle;
 
-    tx.oncomplete = () => {
-        if (
-            elements.historyModal &&
-            !elements.historyModal.classList.contains('hidden')
-        ) {
-            loadHistory();
-        }
-    };
+    if (
+        elements.historyModal &&
+        !elements.historyModal
+            .classList
+            .contains(
+                "hidden"
+            )
+    ) {
+        await loadHistory();
+    }
 }
 
 async function refreshCategories() {
@@ -7484,30 +7775,10 @@ async function refreshCategories() {
      * 使用者或管理者：
      * 才能讀取正式 IndexedDB 分類。
      */
-    } else if (canEditData()) {
-        const tx =
-            db.transaction(
-                ["categories"],
-                "readonly"
-            );
-
-        list = await new Promise(resolve => {
-            const request =
-                tx.objectStore(
-                    "categories"
-                ).getAll();
-
-            request.onsuccess = () => {
-                resolve(
-                    request.result || []
-                );
-            };
-
-            request.onerror = () => {
-                resolve([]);
-            };
-        });
-    }
+} else if (canEditData()) {
+    list =
+        sessionCategories;
+}
 
     const currentSelected =
         elements.categorySelect.value;
@@ -7608,23 +7879,60 @@ async function refreshCategories() {
             });
         }
 
-        window.editCatName = async (id, oldName) => {
-            const newName = prompt("請輸入新的分類名稱：", oldName);
-            if (newName && newName.trim() !== oldName) {
-                const tx = db.transaction(["categories"], "readwrite");
-                tx.objectStore("categories").put({ id, name: newName.trim() });
-                tx.oncomplete = refreshCategories;
-            }
-        };
+window.editCatName =
+async (id, oldName) => {
+    const newName =
+        prompt(
+            "請輸入新的分類名稱：",
+            oldName
+        );
 
-        window.deleteCat = async (id) => {
-if (!canDeleteData()) return alert("此功能僅限管理者使用。");            
-            if (confirm("確定刪除此分類？")) {
-                const tx = db.transaction(["categories"], "readwrite");
-                tx.objectStore("categories").delete(id);
-                tx.oncomplete = refreshCategories;
-            }
-        };
+    if (
+        newName &&
+        newName.trim() !==
+        oldName
+    ) {
+        const category =
+            sessionCategories.find(
+                item =>
+                    Number(item.id) ===
+                    Number(id)
+            );
+
+        if (!category) {
+            return;
+        }
+
+        category.name =
+            newName.trim();
+
+        await refreshCategories();
+    }
+};
+
+window.deleteCat =
+async id => {
+    if (!canDeleteData()) {
+        return alert(
+            "此功能僅限管理者使用。"
+        );
+    }
+
+    if (
+        confirm(
+            "確定刪除此分類？"
+        )
+    ) {
+        sessionCategories =
+            sessionCategories.filter(
+                item =>
+                    Number(item.id) !==
+                    Number(id)
+            );
+
+        await refreshCategories();
+    }
+};
 
         elements.dropZone.onclick = (event) => {
     if (annotationMode === "manual") {
@@ -7908,51 +8216,97 @@ updateUIVisibility();
     }
 }
 
-        elements.saveReportBtn.onclick = async () => {
-if (!canEditData()) {
-    return alert("請先登入使用者或管理者模式，才能執行儲存報告功能。");
-}
-            if (!currentReportData.hazards || currentReportData.hazards.length === 0) {
-                return alert("目前沒有識別結果可以儲存");
-            }
-            try {
-                const tx = db.transaction(["reports"], "readwrite");
-                const store = tx.objectStore("reports");
-const reportTitle = getReportTitle();
+elements.saveReportBtn.onclick =
+async () => {
+    if (!canEditData()) {
+        return alert(
+            "請先登入使用者或管理者模式，才能執行儲存報告功能。"
+        );
+    }
 
-if (elements.reportNameInput) {
-    elements.reportNameInput.value = reportTitle;
-}
+    if (
+        !currentReportData.hazards ||
+        currentReportData.hazards.length === 0
+    ) {
+        return alert(
+            "目前沒有識別結果可以儲存"
+        );
+    }
 
-const reportToSave = {
-    title: reportTitle,
-    category: elements.categorySelect.value,
-    timestamp: Date.now(),
-    imageData: base64Image,
-    hazards: JSON.parse(JSON.stringify(currentReportData.hazards)),
-    suggestions: JSON.parse(JSON.stringify(currentReportData.suggestions))
-};
+    try {
+        const reportTitle =
+            getReportTitle();
 
-const isUpdatingReport = !!currentReportId;
+        if (
+            elements.reportNameInput
+        ) {
+            elements.reportNameInput.value =
+                reportTitle;
+        }
 
-if (isUpdatingReport) {
-    reportToSave.id = currentReportId;
-    store.put(reportToSave);
-} else {
-    const addReq = store.add(reportToSave);
+        const reportToSave = {
+            title:
+                reportTitle,
 
-    addReq.onsuccess = (event) => {
-        currentReportId = event.target.result;
-    };
-}
+            category:
+                elements.categorySelect.value,
 
-tx.oncomplete = () => {
-    alert(isUpdatingReport ? "報告已更新完成！" : "儲存紀錄完成！");
-};
-            } catch (e) {
-                alert("儲存失敗: " + e.message);
-            }
+            timestamp:
+                Date.now(),
+
+            imageData:
+                base64Image,
+
+            hazards:
+                cloneSessionData(
+                    currentReportData.hazards
+                ),
+
+            suggestions:
+                cloneSessionData(
+                    currentReportData.suggestions
+                )
         };
+
+        const isUpdatingReport =
+            Number.isInteger(
+                Number(
+                    currentReportId
+                )
+            ) &&
+            Number(
+                currentReportId
+            ) > 0;
+
+        if (isUpdatingReport) {
+            reportToSave.id =
+                Number(
+                    currentReportId
+                );
+        }
+
+        const savedReport =
+            upsertSessionRecord(
+                sessionReports,
+                reportToSave
+            );
+
+        currentReportId =
+            savedReport.id;
+
+        alert(
+            isUpdatingReport
+                ? "報告已更新完成！"
+                : "儲存紀錄完成！"
+        );
+
+    } catch (e) {
+        alert(
+            "儲存失敗: " +
+            e.message
+        );
+    }
+};
 
 elements.historyBtn.onclick = () => {
     showModal("history-modal");
@@ -8014,12 +8368,16 @@ function switchHistoryTab(tabName) {
     initIcons();
 }
 
-async function getInspectionAttachmentById(id) {
+async function getInspectionAttachmentById(
+    id
+) {
     if (!Number.isInteger(id)) {
         return null;
     }
 
-    if (isInspectionPreviewDataActive()) {
+    if (
+        isInspectionPreviewDataActive()
+    ) {
         return (
             previewInspectionAttachments.find(
                 attachment =>
@@ -8029,122 +8387,74 @@ async function getInspectionAttachmentById(id) {
         );
     }
 
-    const tx = db.transaction(
-        ["inspectionAttachments"],
-        "readonly"
+    if (!canEditData()) {
+        return null;
+    }
+
+    return (
+        sessionInspectionAttachments.find(
+            attachment =>
+                Number(attachment.id) ===
+                Number(id)
+        ) || null
     );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore(
-                "inspectionAttachments"
-            ).get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result || null);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
 }
 
 async function getAllInspectionAttachments() {
-    if (isInspectionPreviewDataActive()) {
+    if (
+        isInspectionPreviewDataActive()
+    ) {
         return [
             ...previewInspectionAttachments
         ];
     }
 
-    /*
-     * 預覽者尚未載入預覽資料時，
-     * 不讀取正式改善附件。
-     */
     if (!canEditData()) {
         return [];
     }
 
-    const tx = db.transaction(
-        ["inspectionAttachments"],
-        "readonly"
-    );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore(
-                "inspectionAttachments"
-            ).getAll();
-
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
+    return [
+        ...sessionInspectionAttachments
+    ];
 }
 
 async function getInspectionAttachments(
     inspectionReportId
 ) {
-    if (!Number.isInteger(inspectionReportId)) {
+    if (
+        !Number.isInteger(
+            inspectionReportId
+        )
+    ) {
         return [];
     }
 
-    if (isInspectionPreviewDataActive()) {
-        return previewInspectionAttachments
-            .filter(
-                attachment =>
-                    Number(
-                        attachment.inspectionReportId
-                    ) ===
-                    Number(inspectionReportId)
-            )
-            .sort(
-                (a, b) =>
-                    Number(b.uploadedAt || 0) -
-                    Number(a.uploadedAt || 0)
-            );
-    }
+    const source =
+        isInspectionPreviewDataActive()
+            ? previewInspectionAttachments
+            : canEditData()
+                ? sessionInspectionAttachments
+                : [];
 
-    const tx = db.transaction(
-        ["inspectionAttachments"],
-        "readonly"
-    );
-
-    const store =
-        tx.objectStore(
-            "inspectionAttachments"
+    return source
+        .filter(
+            attachment =>
+                Number(
+                    attachment.inspectionReportId
+                ) ===
+                Number(
+                    inspectionReportId
+                )
+        )
+        .sort(
+            (a, b) =>
+                Number(
+                    b.uploadedAt || 0
+                ) -
+                Number(
+                    a.uploadedAt || 0
+                )
         );
-
-    const index =
-        store.index(
-            "inspectionReportId"
-        );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            index.getAll(inspectionReportId);
-
-        request.onsuccess = () => {
-            const result =
-                request.result || [];
-
-            result.sort(
-                (a, b) =>
-                    Number(b.uploadedAt || 0) -
-                    Number(a.uploadedAt || 0)
-            );
-
-            resolve(result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
 }
 
 function updateInspectionCompletionUI() {
@@ -8226,36 +8536,17 @@ async function toggleInspectionCompletionStatus() {
             Date.now()
     };
 
-    try {
-        const tx = db.transaction(
-            ["inspectionReports"],
-            "readwrite"
+try {
+    const savedReport =
+        upsertSessionRecord(
+            sessionInspectionReports,
+            reportToSave
         );
 
-        tx.objectStore(
-            "inspectionReports"
-        ).put(reportToSave);
-
-        await new Promise((resolve, reject) => {
-            tx.oncomplete = resolve;
-
-            tx.onerror = () => {
-                reject(
-                    tx.error ||
-                    new Error("改善狀態更新失敗")
-                );
-            };
-
-            tx.onabort = () => {
-                reject(
-                    tx.error ||
-                    new Error("改善狀態更新已中止")
-                );
-            };
-        });
-
-        currentInspectionDraft =
-            reportToSave;
+currentInspectionDraft =
+    cloneSessionData(
+        savedReport
+    );
 
         renderInspectionDocument(
             currentInspectionDraft
@@ -8860,37 +9151,23 @@ uploadedAt:
             });
         }
 
-        const tx = db.transaction(
-            ["inspectionAttachments"],
-            "readwrite"
-        );
-
-        const store =
-            tx.objectStore(
-                "inspectionAttachments"
+ preparedAttachments.forEach(
+    attachment => {
+        const savedAttachment =
+            cloneSessionData(
+                attachment
             );
 
-        preparedAttachments.forEach(attachment => {
-            store.add(attachment);
-        });
+        savedAttachment.id =
+            getNextSessionId(
+                sessionInspectionAttachments
+            );
 
-        await new Promise((resolve, reject) => {
-            tx.oncomplete = resolve;
-
-            tx.onerror = () => {
-                reject(
-                    tx.error ||
-                    new Error("附件上傳失敗")
-                );
-            };
-
-            tx.onabort = () => {
-                reject(
-                    tx.error ||
-                    new Error("附件上傳已中止")
-                );
-            };
-        });
+        sessionInspectionAttachments.push(
+            savedAttachment
+        );
+    }
+);
 
 clearPendingInspectionAttachmentFiles();
 
@@ -9623,7 +9900,8 @@ const subtitle =
     }
 };
 
-window.deleteInspectionAttachment = async id => {
+window.deleteInspectionAttachment =
+async id => {
     if (!canDeleteData()) {
         showToast(
             "附件刪除功能僅限管理者使用。",
@@ -9632,24 +9910,23 @@ window.deleteInspectionAttachment = async id => {
         return;
     }
 
-    const confirmed = confirm(
-        "確定要刪除此附件嗎？\n\n" +
-        "刪除後將無法復原。"
-    );
-
-    if (!confirmed) return;
-
-    try {
-        const tx = db.transaction(
-            ["inspectionAttachments"],
-            "readwrite"
+    const confirmed =
+        confirm(
+            "確定要刪除此附件嗎？\n\n" +
+            "刪除後將無法復原。"
         );
 
-        tx.objectStore(
-            "inspectionAttachments"
-        ).delete(id);
+    if (!confirmed) {
+        return;
+    }
 
-tx.oncomplete = async () => {
+    sessionInspectionAttachments =
+        sessionInspectionAttachments.filter(
+            attachment =>
+                Number(attachment.id) !==
+                Number(id)
+        );
+
     showToast(
         "附件已刪除。"
     );
@@ -9657,71 +9934,44 @@ tx.oncomplete = async () => {
     await renderInspectionAttachmentList();
 
     if (
-        typeof currentHistoryTab !== "undefined" &&
-        currentHistoryTab === "inspection"
+        typeof currentHistoryTab !==
+            "undefined" &&
+        currentHistoryTab ===
+            "inspection"
     ) {
         await loadInspectionHistory();
     }
 };
 
-        tx.onerror = () => {
-            showToast(
-                "附件刪除失敗，請重新操作。",
-                "error"
-            );
-        };
-    } catch (error) {
-        console.error(error);
-
-        showToast(
-            "附件刪除失敗。",
-            "error"
-        );
-    }
-};
 
 async function getAllInspectionReports() {
-    if (isInspectionPreviewDataActive()) {
+    if (
+        isInspectionPreviewDataActive()
+    ) {
         return [
             ...previewInspectionReports
         ];
     }
 
-    /*
-     * 預覽者尚未載入預覽資料時，
-     * 不讀取正式改善報告。
-     */
     if (!canEditData()) {
         return [];
     }
 
-    const tx = db.transaction(
-        ["inspectionReports"],
-        "readonly"
-    );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore(
-                "inspectionReports"
-            ).getAll();
-
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
+    return [
+        ...sessionInspectionReports
+    ];
 }
 
-async function getInspectionReportById(id) {
+async function getInspectionReportById(
+    id
+) {
     if (!Number.isInteger(id)) {
         return null;
     }
 
-    if (isInspectionPreviewDataActive()) {
+    if (
+        isInspectionPreviewDataActive()
+    ) {
         return (
             previewInspectionReports.find(
                 report =>
@@ -9731,25 +9981,17 @@ async function getInspectionReportById(id) {
         );
     }
 
-    const tx = db.transaction(
-        ["inspectionReports"],
-        "readonly"
+    if (!canEditData()) {
+        return null;
+    }
+
+    return (
+        sessionInspectionReports.find(
+            report =>
+                Number(report.id) ===
+                Number(id)
+        ) || null
     );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore(
-                "inspectionReports"
-            ).get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result || null);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
 }
 
 function setInspectionYearUnitFilter(
@@ -10378,7 +10620,8 @@ yearSection.innerHTML = `
     initIcons();
 }
 
-window.deleteInspectionReport = async id => {
+window.deleteInspectionReport =
+async id => {
     if (!canDeleteData()) {
         showToast(
             "此功能僅限管理者使用。",
@@ -10395,93 +10638,49 @@ window.deleteInspectionReport = async id => {
         return;
     }
 
-    const confirmed = confirm(
-        "確定要刪除這份稽查改善報告嗎？\n\n" +
-        "此操作會一併刪除該案件的改善回覆附件，且無法復原。"
+    const confirmed =
+        confirm(
+            "確定要刪除這份稽查改善報告嗎？\n\n" +
+            "此操作會一併刪除該案件的改善回覆附件，且無法復原。"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    sessionInspectionAttachments =
+        sessionInspectionAttachments.filter(
+            attachment =>
+                Number(
+                    attachment.inspectionReportId
+                ) !==
+                Number(id)
+        );
+
+    sessionInspectionReports =
+        sessionInspectionReports.filter(
+            report =>
+                Number(report.id) !==
+                Number(id)
+        );
+
+    if (
+        currentInspectionDraft &&
+        Number(
+            currentInspectionDraft.id
+        ) ===
+        Number(id)
+    ) {
+        currentInspectionDraft = null;
+    }
+
+    showToast(
+        "稽查改善報告及其附件已刪除。"
     );
 
-    if (!confirmed) return;
-
-    try {
-        const attachmentTx = db.transaction(
-            ["inspectionAttachments"],
-            "readwrite"
-        );
-
-        const attachmentStore =
-            attachmentTx.objectStore(
-                "inspectionAttachments"
-            );
-
-        const attachmentIndex =
-            attachmentStore.index(
-                "inspectionReportId"
-            );
-
-        const attachmentKeys =
-            await new Promise((resolve, reject) => {
-                const request =
-                    attachmentIndex.getAllKeys(id);
-
-                request.onsuccess = () => {
-                    resolve(request.result || []);
-                };
-
-                request.onerror = () => {
-                    reject(request.error);
-                };
-            });
-
-        attachmentKeys.forEach(key => {
-            attachmentStore.delete(key);
-        });
-
-        await new Promise((resolve, reject) => {
-            attachmentTx.oncomplete = resolve;
-            attachmentTx.onerror = () =>
-                reject(attachmentTx.error);
-            attachmentTx.onabort = () =>
-                reject(attachmentTx.error);
-        });
-
-        const reportTx = db.transaction(
-            ["inspectionReports"],
-            "readwrite"
-        );
-
-        reportTx
-            .objectStore("inspectionReports")
-            .delete(id);
-
-        await new Promise((resolve, reject) => {
-            reportTx.oncomplete = resolve;
-            reportTx.onerror = () =>
-                reject(reportTx.error);
-            reportTx.onabort = () =>
-                reject(reportTx.error);
-        });
-
-        if (
-            currentInspectionDraft &&
-            currentInspectionDraft.id === id
-        ) {
-            currentInspectionDraft = null;
-        }
-
-        showToast(
-            "稽查改善報告及其附件已刪除。"
-        );
-
-        loadInspectionHistory();
-    } catch (error) {
-        console.error(error);
-
-        showToast(
-            "稽查改善報告刪除失敗，請重新操作。",
-            "error"
-        );
-    }
+    await loadInspectionHistory();
 };
+
 
 window.previewInspectionHistory = async id => {
     let report = null;
@@ -10555,30 +10754,11 @@ if (
 } else {
     /*
      * 使用者或管理者：
-     * 讀取正式報告。
+     * 讀取目前工作階段正式資料。
      */
-    const tx =
-        db.transaction(
-            ["reports"],
-            "readonly"
-        );
-
-    reports = await new Promise(resolve => {
-        const request =
-            tx.objectStore(
-                "reports"
-            ).getAll();
-
-        request.onsuccess = () => {
-            resolve(
-                request.result || []
-            );
-        };
-
-        request.onerror = () => {
-            resolve([]);
-        };
-    });
+    reports = [
+        ...sessionReports
+    ];
 }
 
     elements.historyList.innerHTML = '';
@@ -10622,49 +10802,89 @@ if (
         }
 
         // 歷史紀錄編輯功能
-window.editHistoryTitle = async (id) => {
-if (!canEditData()) return alert("請先登入使用者或管理者模式。");    
-    const currentTitle = document.getElementById(`report-title-${id}`).innerText;
-    const newTitle = prompt("請輸入新的報告名稱：", currentTitle);
+window.editHistoryTitle =
+async id => {
+    if (!canEditData()) {
+        return alert(
+            "請先登入使用者或管理者模式。"
+        );
+    }
 
-    if (newTitle && newTitle.trim() !== currentTitle) {
-        const tx = db.transaction(["reports"], "readwrite");
-        const store = tx.objectStore("reports");
+    const currentTitle =
+        document.getElementById(
+            `report-title-${id}`
+        ).innerText;
 
-        const report = await new Promise(r => {
-            const req = store.get(id);
-            req.onsuccess = () => r(req.result);
-            req.onerror = () => r(null);
-        });
+    const newTitle =
+        prompt(
+            "請輸入新的報告名稱：",
+            currentTitle
+        );
 
-        if (!report) return;
+    if (
+        newTitle &&
+        newTitle.trim() !==
+        currentTitle
+    ) {
+        const report =
+            sessionReports.find(
+                item =>
+                    Number(item.id) ===
+                    Number(id)
+            );
 
-        report.title = newTitle.trim();
-        store.put(report);
+        if (!report) {
+            return;
+        }
 
-        tx.oncomplete = () => {
-            if (currentReportId === id && elements.reportNameInput) {
-                elements.reportNameInput.value = newTitle.trim();
-            }
+        report.title =
+            newTitle.trim();
 
-            loadHistory();
-        };
+        if (
+            Number(
+                currentReportId
+            ) ===
+            Number(id) &&
+            elements.reportNameInput
+        ) {
+            elements.reportNameInput.value =
+                newTitle.trim();
+        }
+
+        await loadHistory();
     }
 };
 
-window.deleteHistory = async (id) => {
-if (!canDeleteData()) return alert("此功能僅限管理者使用。");    
-    if (confirm("確定刪除此筆報告紀錄？")) {
-        const tx = db.transaction(["reports"], "readwrite");
-        tx.objectStore("reports").delete(id);
+window.deleteHistory =
+async id => {
+    if (!canDeleteData()) {
+        return alert(
+            "此功能僅限管理者使用。"
+        );
+    }
 
-        tx.oncomplete = () => {
-            if (currentReportId === id) {
-                currentReportId = null;
-            }
+    if (
+        confirm(
+            "確定刪除此筆報告紀錄？"
+        )
+    ) {
+        sessionReports =
+            sessionReports.filter(
+                report =>
+                    Number(report.id) !==
+                    Number(id)
+            );
 
-            loadHistory();
-        };
+        if (
+            Number(
+                currentReportId
+            ) ===
+            Number(id)
+        ) {
+            currentReportId = null;
+        }
+
+        await loadHistory();
     }
 };
 
@@ -10678,20 +10898,11 @@ elements.clearHistoryBtn.onclick = async () => {
             "確定要清空所有報告紀錄嗎？此動作無法還原！"
         )
     ) {
-        const tx =
-            db.transaction(
-                ["reports"],
-                "readwrite"
-            );
+sessionReports = [];
 
-        tx.objectStore(
-            "reports"
-        ).clear();
+currentReportId = null;
 
-        tx.oncomplete = () => {
-            currentReportId = null;
-            loadHistory();
-        };
+await loadHistory();
     }
 };
 
@@ -10700,13 +10911,14 @@ window.previewHistory = async (id) => {
 
     if (isPreviewDataActive() && Array.isArray(previewReports)) {
         report = previewReports.find(r => String(r.id) === String(id));
-    } else {
-        const tx = db.transaction(["reports"], "readonly");
-        report = await new Promise(r => {
-            const req = tx.objectStore("reports").get(id);
-            req.onsuccess = () => r(req.result);
-        });
-    }
+} else if (canEditData()) {
+    report =
+        sessionReports.find(
+            item =>
+                Number(item.id) ===
+                Number(id)
+        ) || null;
+}
 if (report) {
     currentReportId = report.id;
     base64Image = report.imageData;
@@ -11661,29 +11873,39 @@ elements.printReportBtn.onclick = () => {
 // 統一資料匯出／匯入／載入預覽
 // =====================================================
 
-async function getAllStoreRecords(storeName) {
-    const tx = db.transaction(
-        [storeName],
-        "readonly"
+async function getAllStoreRecords(
+    storeName
+) {
+    const sessionStores = {
+        reports:
+            sessionReports,
+
+        categories:
+            sessionCategories,
+
+        inspectionReports:
+            sessionInspectionReports,
+
+        inspectionAttachments:
+            sessionInspectionAttachments
+    };
+
+    if (
+        !Object.prototype.hasOwnProperty.call(
+            sessionStores,
+            storeName
+        )
+    ) {
+        throw new Error(
+            `未知資料來源：${storeName}`
+        );
+    }
+
+    return cloneSessionData(
+        sessionStores[
+            storeName
+        ]
     );
-
-    return await new Promise((resolve, reject) => {
-        const request =
-            tx.objectStore(storeName).getAll();
-
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-            reject(
-                request.error ||
-                new Error(
-                    `無法讀取 ${storeName}`
-                )
-            );
-        };
-    });
 }
 
 document.getElementById(
@@ -11923,95 +12145,37 @@ alert(
                 return;
             }
 
-            // =========================================
-            // 使用者／管理者：正式寫入 IndexedDB
-            // =========================================
-            const storeNames = [
-                "reports",
-                "categories"
-            ];
+// =========================================
+// 使用者／管理者：
+// 正式資料只載入目前工作階段
+// =========================================
 
-            if (hasInspectionBundle) {
-                storeNames.push(
-                    "inspectionReports",
-                    "inspectionAttachments"
-                );
-            }
+sessionReports =
+    cloneSessionData(
+        data.reports
+    );
 
-            const tx = db.transaction(
-                storeNames,
-                "readwrite"
-            );
+sessionCategories =
+    cloneSessionData(
+        data.categories
+    );
 
-            const reportStore =
-                tx.objectStore("reports");
-
-            reportStore.clear();
-
-            data.reports.forEach(report => {
-                reportStore.put(report);
-            });
-
-            const categoryStore =
-                tx.objectStore("categories");
-
-            categoryStore.clear();
-
-            data.categories.forEach(category => {
-                categoryStore.put(category);
-            });
-
-            if (hasInspectionBundle) {
-                const inspectionStore =
-                    tx.objectStore(
-                        "inspectionReports"
-                    );
-
-                inspectionStore.clear();
-
-                incomingInspectionReports.forEach(
-                    report => {
-                        inspectionStore.put(report);
-                    }
-                );
-
-                const attachmentStore =
-                    tx.objectStore(
-                        "inspectionAttachments"
-                    );
-
-                attachmentStore.clear();
-
-                incomingInspectionAttachments.forEach(
-                    attachment => {
-                        attachmentStore.put(
-                            attachment
-                        );
-                    }
-                );
-            }
-
-await new Promise((resolve, reject) => {
-    tx.oncomplete = resolve;
-
-    tx.onerror = () => {
-        reject(
-            tx.error ||
-            new Error(
-                "正式資料寫入失敗"
-            )
+if (hasInspectionBundle) {
+    sessionInspectionReports =
+        cloneSessionData(
+            incomingInspectionReports
         );
-    };
 
-    tx.onabort = () => {
-        reject(
-            tx.error ||
-            new Error(
-                "正式資料寫入已中止"
-            )
+    sessionInspectionAttachments =
+        cloneSessionData(
+            incomingInspectionAttachments
         );
-    };
-});
+}
+
+/*
+ * 確保舊版本瀏覽器沒有殘留正式資料。
+ */
+await clearPersistedHazardSystemData();
 
 /*
  * 正式載入／匯入完成後，
