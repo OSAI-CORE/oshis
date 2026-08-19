@@ -5183,6 +5183,140 @@ let hazardUndoStack = [];
 let currentInspectionDraft = null;
 let pendingInspectionAttachmentFiles = [];
 
+/* =========================================================
+   工作階段防呆狀態
+========================================================= */
+
+/*
+ * 危害識別工作區：
+ * AI 識別、危害項目、改善建議、
+ * 紅框等內容尚未按「儲存報告」。
+ */
+let hazardWorkspaceDirty = false;
+
+/*
+ * 缺失改善單：
+ * 表單內容尚未按「儲存改善單」。
+ */
+let inspectionDraftDirty = false;
+
+/*
+ * 已經正式儲存到目前 Session，
+ * 但最新工作成果尚未匯出 JSON。
+ */
+let sessionNeedsExport = false;
+
+/*
+ * 防止重複點擊登出。
+ */
+let isLoggingOut = false;
+
+
+/* 是否還有尚未按儲存的草稿 */
+function hasUnsavedDraftChanges() {
+    return (
+        hazardWorkspaceDirty ||
+        inspectionDraftDirty
+    );
+}
+
+
+/* 是否有任何關閉後可能遺失的工作成果 */
+function hasPendingSessionChanges() {
+    return (
+        hasUnsavedDraftChanges() ||
+        sessionNeedsExport
+    );
+}
+
+
+function markHazardWorkspaceDirty() {
+    if (canEditData()) {
+        hazardWorkspaceDirty = true;
+    }
+}
+
+
+function markInspectionDraftDirty() {
+    if (canEditData()) {
+        inspectionDraftDirty = true;
+    }
+}
+
+
+function markSessionNeedsExport() {
+    if (canEditData()) {
+        sessionNeedsExport = true;
+    }
+}
+
+
+/*
+ * 完整清除防呆狀態。
+ * 僅供：
+ * - 系統初始化
+ * - 登出
+ * - MASTER RECOVERY
+ * 使用。
+ */
+function clearWorkProtectionState() {
+    hazardWorkspaceDirty = false;
+    inspectionDraftDirty = false;
+    sessionNeedsExport = false;
+}
+
+
+/*
+ * 內部操作如果會覆蓋尚未儲存草稿，
+ * 使用這個函式先確認。
+ */
+function confirmDiscardUnsavedDrafts(
+    actionLabel = "繼續"
+) {
+    if (!hasUnsavedDraftChanges()) {
+        return true;
+    }
+
+    const pendingItems = [];
+
+    if (hazardWorkspaceDirty) {
+        pendingItems.push(
+            "危害識別報告"
+        );
+    }
+
+    if (inspectionDraftDirty) {
+        pendingItems.push(
+            "缺失改善單"
+        );
+    }
+
+    return confirm(
+        `目前有尚未儲存的工作內容：${pendingItems.join("、")}。\n\n` +
+        `${actionLabel}將放棄這些尚未儲存的內容。\n\n` +
+        "確定要繼續嗎？"
+    );
+}
+
+
+/*
+ * F5、關閉分頁、關閉瀏覽器、
+ * 離開目前網站時的最後防呆。
+ *
+ * 瀏覽器會顯示自己的標準提示文字。
+ */
+window.addEventListener(
+    "beforeunload",
+    event => {
+        if (!hasPendingSessionChanges()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.returnValue = "";
+    }
+);
+
 /*
  * 個別年度目前選取的受稽查單位。
  * 例如：
@@ -5214,6 +5348,12 @@ function resetFormalSessionData() {
     sessionInspectionReports = [];
 
     sessionInspectionAttachments = [];
+
+    /*
+     * 正式工作階段被重置時，
+     * 防呆狀態一併回到乾淨狀態。
+     */
+    clearWorkProtectionState();
 }
 
 function getNextSessionId(records) {
@@ -5277,13 +5417,22 @@ function upsertSessionRecord(
 function pushUndoState() {
     if (!currentReportData) return;
 
-    hazardUndoStack.push({
-        base64Image,
-        currentReportData: JSON.parse(JSON.stringify(currentReportData)),
-        currentReportId,
-        selectedHazardIndex,
-        reportName: elements.reportNameInput ? elements.reportNameInput.value : ""
-    });
+hazardUndoStack.push({
+    base64Image,
+    currentReportData:
+        JSON.parse(
+            JSON.stringify(
+                currentReportData
+            )
+        ),
+    currentReportId,
+    selectedHazardIndex,
+    reportName:
+        elements.reportNameInput
+            ? elements.reportNameInput.value
+            : "",
+    hazardWorkspaceDirty
+});
 
     if (hazardUndoStack.length > 20) {
         hazardUndoStack.shift();
@@ -5368,10 +5517,21 @@ function clearCurrentHazardWorkspace() {
 
     hazardUndoStack = [];
 
-    currentInspectionDraft = null;
-    pendingInspectionAttachmentFiles = [];
+currentInspectionDraft = null;
+pendingInspectionAttachmentFiles = [];
 
-    if (elements.reportNameInput) {
+/*
+ * 工作畫面清除後，
+ * 尚未儲存的草稿已不存在。
+ *
+ * 但不能清除 sessionNeedsExport，
+ * 因為其他已儲存 Session 資料
+ * 可能仍尚未匯出 JSON。
+ */
+hazardWorkspaceDirty = false;
+inspectionDraftDirty = false;
+
+if (elements.reportNameInput) {
         elements.reportNameInput.value = "";
     }
 
@@ -5972,19 +6132,36 @@ document.getElementById(
     "logout-btn"
 ).onclick = async () => {
 
-    const confirmed =
-        confirm(
-            "確定要登出目前模式嗎？\n\n" +
-            "尚未匯出的變更將在登出後清除，" +
-            "請確認已先匯出最新 JSON。"
-        );
-
-    if (!confirmed) {
+    if (isLoggingOut) {
         return;
     }
 
+    const logoutMessage =
+        hasPendingSessionChanges()
+            ? (
+                "確定要登出目前模式嗎？\n\n" +
+                "目前仍有尚未儲存或尚未匯出 JSON 的工作成果，" +
+                "登出後本次工作階段資料將清除。\n\n" +
+                "請確認已先完成儲存並匯出最新 JSON。"
+            )
+            : (
+                "確定要登出目前模式嗎？\n\n" +
+                "目前沒有尚未儲存或尚未匯出的工作變更。"
+            );
+
+    if (
+        !confirm(
+            logoutMessage
+        )
+    ) {
+        return;
+    }
+
+    isLoggingOut = true;
+
     try {
         await clearPersistedHazardSystemData();
+
     } catch (error) {
         console.error(error);
 
@@ -5993,17 +6170,17 @@ document.getElementById(
             "error"
         );
 
+        isLoggingOut = false;
         return;
     }
 
     /*
-     * 清除目前正式工作階段。
+     * 清除正式 Session 與防呆狀態。
      */
     resetFormalSessionData();
 
     /*
-     * 恢復 GitHub HTML
-     * 正式權限設定。
+     * 恢復 GitHub HTML 正式權限。
      */
     systemPassword =
         DEFAULT_ADMIN_PASSWORD;
@@ -6023,6 +6200,13 @@ document.getElementById(
     );
 
     await clearViewerWorkingData();
+
+    /*
+     * 本系統登出後不 reload，
+     * 因此必須恢復 false，
+     * 讓之後重新登入仍可再次登出。
+     */
+    isLoggingOut = false;
 
     showToast(
         "已完成登出。"
@@ -6619,6 +6803,20 @@ async function openInspectionCreateModal() {
         );
     }
 
+const shouldDiscardInspectionDraft =
+    inspectionDraftDirty;
+
+if (
+    shouldDiscardInspectionDraft &&
+    !confirm(
+        "目前有尚未儲存的缺失改善單內容。\n\n" +
+        "重新開啟改善單將放棄目前尚未儲存的內容。\n\n" +
+        "確定要繼續嗎？"
+    )
+) {
+    return;
+}    
+
 if (Number.isInteger(currentReportId)) {
     try {
         const existingInspection =
@@ -6636,6 +6834,10 @@ if (Number.isInteger(currentReportId)) {
             if (!openExisting) {
                 return;
             }
+
+if (shouldDiscardInspectionDraft) {
+    inspectionDraftDirty = false;
+}
 
             currentInspectionDraft =
                 JSON.parse(
@@ -6682,6 +6884,10 @@ return;
         return;
     }
 }    
+
+if (shouldDiscardInspectionDraft) {
+    inspectionDraftDirty = false;
+}
 
 currentInspectionDraft = null;
 
@@ -7307,13 +7513,21 @@ async function saveInspectionReport() {
         ).value =
             savedReport.caseNo;
 
-        renderInspectionDocument(
-            currentInspectionDraft
-        );
+renderInspectionDocument(
+    currentInspectionDraft
+);
 
-        showToast(
-            "改善單已儲存完成。"
-        );
+/*
+ * 改善單已正式寫入目前 Session。
+ */
+inspectionDraftDirty =
+    false;
+
+markSessionNeedsExport();
+
+showToast(
+    "改善單已儲存完成。"
+);
 
     } catch (error) {
         console.error(error);
@@ -7746,6 +7960,8 @@ async function syncCurrentReportTitleToHistory() {
     report.title =
         newTitle;
 
+markSessionNeedsExport();        
+
     if (
         elements.historyModal &&
         !elements.historyModal
@@ -7879,6 +8095,80 @@ async function refreshCategories() {
             });
         }
 
+document.getElementById(
+    "manage-cats-btn"
+).onclick = async () => {
+
+    if (!canEditData()) {
+        return showToast(
+            "請先登入使用者或管理者權限，才能管理分類。",
+            "error"
+        );
+    }
+
+    await refreshCategories();
+
+    showModal(
+        "manage-cats-modal"
+    );
+};
+
+
+document.getElementById(
+    "add-cat-btn"
+).onclick = async () => {
+
+    if (!canEditData()) {
+        return showToast(
+            "請先登入使用者或管理者權限，才能新增分類。",
+            "error"
+        );
+    }
+
+    const input =
+        document.getElementById(
+            "new-cat-input"
+        );
+
+    const name =
+        input.value.trim();
+
+    if (!name) {
+        return alert(
+            "請輸入分類名稱。"
+        );
+    }
+
+    const alreadyExists =
+        sessionCategories.some(
+            item =>
+                String(
+                    item.name || ""
+                ).trim() ===
+                name
+        );
+
+    if (alreadyExists) {
+        return alert(
+            "此分類名稱已存在。"
+        );
+    }
+
+    sessionCategories.push({
+        id:
+            getNextSessionId(
+                sessionCategories
+            ),
+        name
+    });
+
+    markSessionNeedsExport();
+
+    input.value = "";
+
+    await refreshCategories();
+};
+
 window.editCatName =
 async (id, oldName) => {
     const newName =
@@ -7906,6 +8196,8 @@ async (id, oldName) => {
         category.name =
             newName.trim();
 
+markSessionNeedsExport();            
+
         await refreshCategories();
     }
 };
@@ -7923,14 +8215,16 @@ async id => {
             "確定刪除此分類？"
         )
     ) {
-        sessionCategories =
-            sessionCategories.filter(
-                item =>
-                    Number(item.id) !==
-                    Number(id)
-            );
+sessionCategories =
+    sessionCategories.filter(
+        item =>
+            Number(item.id) !==
+            Number(id)
+    );
 
-        await refreshCategories();
+markSessionNeedsExport();
+
+await refreshCategories();
     }
 };
 
@@ -8052,6 +8346,14 @@ async function handleFile(file) {
         return;
     }
 
+    if (
+        !confirmDiscardUnsavedDrafts(
+            "載入新照片"
+        )
+    ) {
+        return;
+    }
+
     try {
         const compressedBase64 =
             await resizeImageToBase64(
@@ -8071,6 +8373,12 @@ async function handleFile(file) {
 
         currentReportId = null;
         currentInspectionDraft = null;
+
+        hazardWorkspaceDirty =
+    false;
+
+inspectionDraftDirty =
+    false;
 
         selectedHazardIndex = -1;
         editingHazardIndex = -1;
@@ -8198,8 +8506,16 @@ if (!canUseAI()) {
             throw new Error("AI 未回傳有效 JSON 內容");
         }
 
-currentReportData = JSON.parse(text);
+currentReportData =
+    JSON.parse(text);
+
 normalizeHazardData();
+
+/*
+ * AI 已產生新的危害識別內容，
+ * 但尚未按「儲存報告」。
+ */
+markHazardWorkspaceDirty();
 
 if (elements.reportNameInput && !elements.reportNameInput.value.trim()) {
     elements.reportNameInput.value = getReportTitle();
@@ -8293,6 +8609,16 @@ async () => {
 
         currentReportId =
             savedReport.id;
+
+/*
+ * 報告已正式儲存至目前 Session。
+ *
+ * 草稿 dirty 清除，
+ * 並標記最新 Session 尚未匯出 JSON。
+ */
+hazardWorkspaceDirty = false;
+
+markSessionNeedsExport();            
 
         alert(
             isUpdatingReport
@@ -8553,6 +8879,8 @@ currentInspectionDraft =
         );
 
         updateInspectionCompletionUI();
+
+        markSessionNeedsExport();
 
         if (
             typeof currentHistoryTab !== "undefined" &&
@@ -9168,6 +9496,8 @@ uploadedAt:
         );
     }
 );
+
+markSessionNeedsExport();
 
 clearPendingInspectionAttachmentFiles();
 
@@ -9927,6 +10257,8 @@ async id => {
                 Number(id)
         );
 
+    markSessionNeedsExport();    
+
     showToast(
         "附件已刪除。"
     );
@@ -10664,6 +10996,8 @@ async id => {
                 Number(id)
         );
 
+    markSessionNeedsExport();    
+
     if (
         currentInspectionDraft &&
         Number(
@@ -10682,7 +11016,23 @@ async id => {
 };
 
 
-window.previewInspectionHistory = async id => {
+window.previewInspectionHistory =
+async id => {
+
+    const shouldDiscardInspectionDraft =
+        inspectionDraftDirty;
+
+    if (
+        shouldDiscardInspectionDraft &&
+        !confirm(
+            "目前有尚未儲存的缺失改善單內容。\n\n" +
+            "開啟其他改善單將放棄目前尚未儲存的內容。\n\n" +
+            "確定要繼續嗎？"
+        )
+    ) {
+        return;
+    }
+
     let report = null;
 
     try {
@@ -10692,16 +11042,26 @@ window.previewInspectionHistory = async id => {
         console.error(error);
     }
 
-    if (!report) {
-        showToast(
-            "找不到這份改善單資料。",
-            "error"
-        );
-        return;
-    }
+if (!report) {
+    showToast(
+        "找不到這份改善單資料。",
+        "error"
+    );
+    return;
+}
 
-    currentInspectionDraft =
-        JSON.parse(JSON.stringify(report));
+/*
+ * 已確認切換到另一份正式改善單，
+ * 原本未儲存草稿正式放棄。
+ */
+if (shouldDiscardInspectionDraft) {
+    inspectionDraftDirty = false;
+}
+
+currentInspectionDraft =
+    JSON.parse(
+        JSON.stringify(report)
+    );
 
     renderInspectionDocument(
         currentInspectionDraft
@@ -10840,6 +11200,8 @@ async id => {
         report.title =
             newTitle.trim();
 
+markSessionNeedsExport();            
+
         if (
             Number(
                 currentReportId
@@ -10875,16 +11237,18 @@ async id => {
                     Number(id)
             );
 
-        if (
-            Number(
-                currentReportId
-            ) ===
-            Number(id)
-        ) {
-            currentReportId = null;
-        }
+if (
+    Number(
+        currentReportId
+    ) ===
+    Number(id)
+) {
+    currentReportId = null;
+}
 
-        await loadHistory();
+markSessionNeedsExport();
+
+await loadHistory();
     }
 };
 
@@ -10898,15 +11262,32 @@ elements.clearHistoryBtn.onclick = async () => {
             "確定要清空所有報告紀錄嗎？此動作無法還原！"
         )
     ) {
+const hadReports =
+    sessionReports.length > 0;
+
 sessionReports = [];
 
 currentReportId = null;
+
+if (hadReports) {
+    markSessionNeedsExport();
+}
 
 await loadHistory();
     }
 };
 
-window.previewHistory = async (id) => {
+window.previewHistory =
+async id => {
+
+    if (
+        !confirmDiscardUnsavedDrafts(
+            "開啟其他歷史報告"
+        )
+    ) {
+        return;
+    }
+
     let report = null;
 
     if (isPreviewDataActive() && Array.isArray(previewReports)) {
@@ -10920,10 +11301,45 @@ window.previewHistory = async (id) => {
         ) || null;
 }
 if (report) {
-    currentReportId = report.id;
-    base64Image = report.imageData;
-    currentReportData = { hazards: report.hazards, suggestions: report.suggestions };
-normalizeHazardData();
+    currentReportId =
+        report.id;
+
+    base64Image =
+        report.imageData;
+
+    /*
+     * 必須複製工作副本，
+     * 不可直接引用 sessionReports 內的陣列。
+     *
+     * 否則尚未按「儲存報告」，
+     * 就可能直接修改 Session 正式資料。
+     */
+    currentReportData = {
+        hazards:
+            cloneSessionData(
+                report.hazards || []
+            ),
+
+        suggestions:
+            cloneSessionData(
+                report.suggestions || []
+            )
+    };
+
+    /*
+     * 剛載入正式歷史報告，
+     * 尚未產生新的人工修改。
+     */
+    hazardWorkspaceDirty =
+        false;
+
+    inspectionDraftDirty =
+        false;
+
+    currentInspectionDraft =
+        null;
+
+    normalizeHazardData();
 
     if (elements.reportNameInput) {
         elements.reportNameInput.value = report.title || getReportTitle();
@@ -11407,8 +11823,14 @@ window.editHazard = (idx) => {
 if (!canDeleteData()) return alert("此功能僅限管理者使用。");            
             if (confirm("確定刪除此危害項目？")) {
                 pushUndoState();
-                currentReportData.hazards.splice(idx, 1);
-                renderHazards(); drawHazardsOnImage(); updateUIVisibility();
+currentReportData.hazards.splice(
+    idx,
+    1
+);
+
+markHazardWorkspaceDirty();
+
+renderHazards(); drawHazardsOnImage(); updateUIVisibility();
             }
         };
 
@@ -11428,8 +11850,15 @@ const h = {
 };
 
 pendingManualBox = null;
-if (editingHazardIndex === -1) currentReportData.hazards.push(h);
-else currentReportData.hazards[editingHazardIndex] = h;
+if (editingHazardIndex === -1) {
+    currentReportData.hazards.push(h);
+} else {
+    currentReportData.hazards[
+        editingHazardIndex
+    ] = h;
+}
+
+markHazardWorkspaceDirty();
 
 renderHazards();
 drawHazardsOnImage();
@@ -11440,6 +11869,43 @@ closeModals();
 document.getElementById('add-hazard-manual').onclick = () => {
     startManualAnnotation();
 };
+
+/*
+ * 改善單表單只要有人工輸入／變更，
+ * 就視為尚未儲存草稿。
+ */
+const inspectionFormGrid =
+    document.getElementById(
+        "inspection-form-grid"
+    );
+
+if (inspectionFormGrid) {
+    [
+        "input",
+        "change"
+    ].forEach(
+        eventName => {
+            inspectionFormGrid.addEventListener(
+                eventName,
+                event => {
+                    if (!canEditData()) {
+                        return;
+                    }
+
+                    if (
+                        !event.target.matches(
+                            "input, select, textarea"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    markInspectionDraftDirty();
+                }
+            );
+        }
+    );
+}
 
 document.getElementById("inspection-date").addEventListener("change", (event) => {
     updateInspectionYearFromDate();
@@ -11697,6 +12163,9 @@ document.getElementById('undo-photo-action').onclick = () => {
     currentReportId = previous.currentReportId;
     selectedHazardIndex = previous.selectedHazardIndex;
 
+    hazardWorkspaceDirty =
+    !!previous.hazardWorkspaceDirty;
+
     if (elements.reportNameInput) {
         elements.reportNameInput.value = previous.reportName || "";
     }
@@ -11726,12 +12195,24 @@ document.getElementById('reset-photo-action').onclick = () => {
 
     pushUndoState();
 
-    base64Image = "";
-    currentReportId = null;
-    currentReportData = { hazards: [], suggestions: [] };
-    selectedHazardIndex = -1;
-    annotationMode = null;
-    pendingManualBox = null;
+base64Image = "";
+currentReportId = null;
+
+currentReportData = {
+    hazards: [],
+    suggestions: []
+};
+
+selectedHazardIndex = -1;
+annotationMode = null;
+pendingManualBox = null;
+
+/*
+ * 使用者已明確確認放棄目前危害識別草稿。
+ * Undo 時會由 hazardUndoStack
+ * 恢復原本的 dirty 狀態。
+ */
+hazardWorkspaceDirty = false;
 
     if (elements.reportNameInput) {
         elements.reportNameInput.value = "";
@@ -11802,8 +12283,14 @@ window.editSuggestion = (idx) => {
         window.deleteSuggestion = (idx) => {
 if (!canDeleteData()) return alert("此功能僅限管理者使用。");            
             if (confirm("確定刪除此改善建議？")) {
-                currentReportData.suggestions.splice(idx, 1);
-                renderSuggestions();
+currentReportData.suggestions.splice(
+    idx,
+    1
+);
+
+markHazardWorkspaceDirty();
+
+renderSuggestions();
             }
         };
 
@@ -11821,9 +12308,20 @@ const suggestion = {
     hazardIds: checkedHazardIds
 };
 
-if (editingSuggestionIndex === -1) currentReportData.suggestions.push(suggestion);
-else currentReportData.suggestions[editingSuggestionIndex] = suggestion;
-            renderSuggestions(); closeModals();
+if (editingSuggestionIndex === -1) {
+    currentReportData.suggestions.push(
+        suggestion
+    );
+} else {
+    currentReportData.suggestions[
+        editingSuggestionIndex
+    ] = suggestion;
+}
+
+markHazardWorkspaceDirty();
+
+renderSuggestions();
+closeModals();
         };
 
 elements.printReportBtn.onclick = () => {
@@ -11911,21 +12409,51 @@ async function getAllStoreRecords(
 document.getElementById(
     "export-db"
 ).onclick = async () => {
-    if (!canExportData()) {
-        showToast(
-            "請先登入使用者或管理者權限，才能匯出資料。",
-            "error"
+if (!canExportData()) {
+    showToast(
+        "請先登入使用者或管理者權限，才能匯出資料。",
+        "error"
+    );
+    return;
+}
+
+/*
+ * 尚有工作草稿時，
+ * 不允許直接把半完成資料當成正式 JSON。
+ */
+if (hasUnsavedDraftChanges()) {
+    const pendingItems = [];
+
+    if (hazardWorkspaceDirty) {
+        pendingItems.push(
+            "危害識別報告"
         );
-        return;
     }
 
-    try {
-        const [
-            reports,
-            categories,
-            inspectionReports,
-            inspectionAttachments
-        ] = await Promise.all([
+    if (inspectionDraftDirty) {
+        pendingItems.push(
+            "缺失改善單"
+        );
+    }
+
+    alert(
+        "目前仍有尚未儲存的工作內容：" +
+        pendingItems.join("、") +
+        "。\n\n" +
+        "請先按下對應的儲存按鈕，" +
+        "確認本次修改後再匯出 JSON。"
+    );
+
+    return;
+}
+
+try {
+    const [
+        reports,
+        categories,
+        inspectionReports,
+        inspectionAttachments
+    ] = await Promise.all([
             getAllStoreRecords("reports"),
             getAllStoreRecords("categories"),
             getAllStoreRecords(
@@ -11980,10 +12508,17 @@ document.getElementById(
             )}.json`;
 
         document.body.appendChild(link);
-        link.click();
-        link.remove();
+link.click();
+link.remove();
 
-        setTimeout(() => {
+/*
+ * 最新正式 Session
+ * 已完成 JSON 匯出。
+ */
+sessionNeedsExport =
+    false;
+
+setTimeout(() => {
             URL.revokeObjectURL(url);
         }, 1000);
 
@@ -12088,10 +12623,19 @@ const importLabel =
         ? "匯入資料"
         : "載入資料";
 
+const pendingWorkWarning =
+    hasPendingSessionChanges()
+        ? (
+            "\n\n目前有尚未儲存或尚未匯出的工作成果，" +
+            "繼續後將被覆蓋。"
+        )
+        : "";
+
 if (
     !isPreviewMode &&
     !confirm(
-        `${importLabel}將覆蓋目前所有紀錄，確定要繼續嗎？`
+        `${importLabel}將覆蓋目前所有紀錄，確定要繼續嗎？` +
+        pendingWorkWarning
     )
 ) {
     return;
@@ -12160,17 +12704,15 @@ sessionCategories =
         data.categories
     );
 
-if (hasInspectionBundle) {
-    sessionInspectionReports =
-        cloneSessionData(
-            incomingInspectionReports
-        );
+sessionInspectionReports =
+    cloneSessionData(
+        incomingInspectionReports
+    );
 
-    sessionInspectionAttachments =
-        cloneSessionData(
-            incomingInspectionAttachments
-        );
-}
+sessionInspectionAttachments =
+    cloneSessionData(
+        incomingInspectionAttachments
+    );
 
 /*
  * 確保舊版本瀏覽器沒有殘留正式資料。
@@ -12182,6 +12724,14 @@ await clearPersistedHazardSystemData();
  * 清除畫面上原本顯示的舊報告。
  */
 clearCurrentHazardWorkspace();
+
+/*
+ * 剛載入的 JSON 本身已經是一份
+ * 正式存在的外部資料檔案，
+ * 不應立即要求再次匯出。
+ */
+sessionNeedsExport =
+    false;
 
 previewReports = null;
 previewCategories = null;
@@ -12293,6 +12843,8 @@ if (annotationMode === "edit-box" && selectedHazardIndex >= 0) {
     pushUndoState();
     currentReportData.hazards[selectedHazardIndex].box_2d = newBox;
 
+    markHazardWorkspaceDirty();
+
     annotationMode = null;
     selectedHazardIndex = -1;
     elements.canvasContainer.classList.remove("annotation-active");
@@ -12376,6 +12928,8 @@ elements.canvas.addEventListener("touchend", (event) => {
 if (annotationMode === "edit-box" && selectedHazardIndex >= 0) {
     pushUndoState();
     currentReportData.hazards[selectedHazardIndex].box_2d = newBox;
+
+    markHazardWorkspaceDirty();
 
         annotationMode = null;
         selectedHazardIndex = -1;
@@ -12504,6 +13058,24 @@ document.addEventListener(
 if (elements.reportNameInput) {
     elements.reportNameInput.addEventListener('change', syncCurrentReportTitleToHistory);
     elements.reportNameInput.addEventListener('blur', syncCurrentReportTitleToHistory);
+}
+
+if (elements.categorySelect) {
+    elements.categorySelect.addEventListener(
+        "change",
+        () => {
+            if (
+                canEditData() &&
+                base64Image &&
+                Array.isArray(
+                    currentReportData.hazards
+                ) &&
+                currentReportData.hazards.length > 0
+            ) {
+                markHazardWorkspaceDirty();
+            }
+        }
+    );
 }
 
         initDB().then(() => {
