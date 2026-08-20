@@ -4486,7 +4486,7 @@ and (orientation: portrait) {
 
 
             <p class="text-[11px] text-slate-400 leading-snug text-center mt-3">
-                正式資料維持原有 JSON；預覽資料另設有效期限與開啟次數。
+                正式資料維持原有檔案格式；預覽資料另設有效期限與開啟次數。
             </p>
 
 
@@ -5949,10 +5949,9 @@ function validateAndConsumeLimitedPreview(
         return {
             ok: false,
 
-            message:
-                "此檔案不是本系統產生的預覽專用 JSON。\n\n" +
-                "請使用「匯出資料 → 預覽資料」產生的檔案。"
-        };
+    message:
+        "此檔案不是本系統產生的預覽專用檔案。"
+};
     }
 
 
@@ -6317,7 +6316,7 @@ exportBtn.removeAttribute("title");
     `;
 
     importBtn.title =
-        "載入限時／限次預覽 JSON";
+        "載入限時／限次預覽檔案";
 }
     }
 
@@ -6727,9 +6726,9 @@ document.getElementById(
         hasPendingSessionChanges()
             ? (
                 "確定要登出目前模式嗎？\n\n" +
-                "目前仍有尚未儲存或尚未匯出 JSON 的工作成果，" +
+                "目前仍有尚未儲存或尚未匯出資料檔案的工作成果，" +
                 "登出後本次工作階段資料將清除。\n\n" +
-                "請確認已先完成儲存並匯出最新 JSON。"
+                "請確認已先完成儲存並匯出最新資料檔案。"
             )
             : (
                 "確定要登出目前模式嗎？\n\n" +
@@ -9090,7 +9089,7 @@ if (!canUseAI()) {
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text) {
-            throw new Error("AI 未回傳有效 JSON 內容");
+            throw new Error("AI 未回傳有效資料內容");
         }
 
 currentReportData =
@@ -13436,7 +13435,7 @@ if (hasUnsavedDraftChanges()) {
         pendingItems.join("、") +
         "。\n\n" +
         "請先按下對應的儲存按鈕，" +
-        "確認本次修改後再匯出 JSON。"
+        "確認本次修改後再匯出資料檔案。"
     );
 
     return;
@@ -13627,7 +13626,7 @@ if (
 
     alert(
         "此檔案為預覽專用資料，不能載入正式工作區。\n\n" +
-        "如需接續編輯，請使用正式「匯出資料」所產生的 JSON。"
+        "如需接續編輯，請使用正式「匯出資料」所產生的檔案。"
     );
 
 
