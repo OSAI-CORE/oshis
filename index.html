@@ -258,6 +258,77 @@
 }
 
 /* =========================================================
+   Cloud Center：旋轉讀取動畫相容性修正
+
+   統一接管：
+   1. Font Awesome 的 fa-spin
+   2. Tailwind 的 animate-spin
+
+   避免部分手機瀏覽器、
+   WebKit 或行動裝置動畫設定，
+   造成讀取圖示停留在第一幀不旋轉。
+
+   僅影響 Cloud Center，
+   不修改系統其他動畫與功能邏輯。
+========================================================= */
+
+@-webkit-keyframes oshCloudCenterSpin {
+    from {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes oshCloudCenterSpin {
+    from {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+.cloud-ui-root .fa-spin,
+.cloud-ui-root .animate-spin {
+    display: inline-block !important;
+
+    -webkit-animation:
+        oshCloudCenterSpin
+        1s
+        linear
+        infinite !important;
+
+    animation:
+        oshCloudCenterSpin
+        1s
+        linear
+        infinite !important;
+
+    -webkit-animation-play-state:
+        running !important;
+
+    animation-play-state:
+        running !important;
+
+    -webkit-transform-origin:
+        50% 50% !important;
+
+    transform-origin:
+        50% 50% !important;
+
+    will-change:
+        transform;
+}
+
+/* =========================================================
    雲端中心固定框架與清單捲動機制
 
    表頭、目前權限與下方關閉按鈕固定；
