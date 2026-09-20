@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>職業安全危害識別系統</title>
+<title>OSHIS｜職業安全危害識別系統</title>
 
 <!-- Font Awesome：提前建立 CDN 連線 -->
 <link
@@ -121,7 +121,7 @@
     border: 1px solid #dbe4f0;
     background: #f8fafc;
     color: #475569;
-    border-radius: 9px;
+    border-radius: 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -236,6 +236,40 @@
     color: #ffffff;
 }
 
+/* =========================================================
+   OSAI 管理平台入口
+   尺寸沿用資料操作按鈕，顏色比照證照管理系統
+========================================================= */
+
+#osai-platform-btn {
+    background: #4f46e5;
+    color: #ffffff;
+
+    border: 0;
+
+    box-shadow:
+        0 4px 6px -1px
+        rgba(79, 70, 229, 0.30);
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+    #osai-platform-btn:hover {
+        background: #4338ca;
+        color: #ffffff;
+
+        box-shadow:
+            0 7px 14px -3px
+            rgba(79, 70, 229, 0.38);
+    }
+
+}
+
+#osai-platform-btn:active {
+    background: #3730a3;
+    transform: scale(0.97);
+}
+
 .cloud-center-entry-btn i,
 .cloud-center-entry-btn svg {
     color: #ffffff;
@@ -326,6 +360,42 @@
 
     will-change:
         transform;
+}
+
+/* =========================================================
+   Cloud Center 垃圾桶圖示尺寸
+
+   比照證照管理系統：
+   1. Font Awesome fa-trash
+   2. 固定 12px
+   3. 顏色由按鈕 text-red-500 控制
+   4. 不做 Hover 顏色變化
+========================================================= */
+
+.cloud-tooltip-btn > .fa-trash {
+    font-size:
+        12px !important;
+
+    line-height:
+        1 !important;
+
+    width:
+        12px !important;
+
+    height:
+        12px !important;
+
+    display:
+        inline-flex !important;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    flex:
+        0 0 12px;
 }
 
 /* =========================================================
@@ -835,12 +905,24 @@ body.is-editor #logout-btn:hover {
     text-align: center;
     padding: 28px 0 30px 0;
     margin-top: 60px;
+
+    display: grid;
+    grid-template-columns: auto auto;
+
+    justify-content: center;
+    align-items: baseline;
+
+    column-gap: 72px;
 }
 
 .footer-line {
+    grid-column: 1 / -1;
+    justify-self: center;
+
     width: 260px;
     height: 1px;
     margin: 0 auto 16px auto;
+
     background: linear-gradient(
         to right,
         transparent,
@@ -854,7 +936,10 @@ body.is-editor #logout-btn:hover {
     font-size: 14px;
     letter-spacing: 0.22em;
     font-weight: 700;
-    margin-bottom: 10px;
+
+    margin: 0;
+
+    white-space: nowrap;
 }
 
 .footer-dev {
@@ -862,6 +947,27 @@ body.is-editor #logout-btn:hover {
     font-size: 13px;
     font-style: italic;
     letter-spacing: 0.12em;
+
+    margin: 0;
+
+    white-space: nowrap;
+}
+
+/* 手機版 Footer：直式／橫式皆維持左右同排 */
+@media screen and (max-width: 950px) {
+
+    .system-footer {
+        column-gap: 20px;
+    }
+
+}
+
+@media screen and (max-width: 767px) {
+
+    .system-footer {
+        column-gap: 8px;
+    }
+
 }
 
 #hazard-canvas {
@@ -1106,20 +1212,65 @@ button:not(.cloud-ui-root button):hover:not(:disabled) {
         box-shadow: none !important;
     }
 
-    #history-btn,
-    #export-db,
-    #import-db {
-        border: 1px solid #dbe4f0;
-        background: #f8fafc !important;
+/* 歷史報告清單：維持原本淺色 */
+#history-btn {
+    border: 1px solid #dbe4f0;
+    background: #f8fafc !important;
+}
+
+#history-btn:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #bfdbfe;
+}
+
+
+/* =========================================================
+   資料匯出／載入／匯入／退出預覽
+   柔和 Slate 配色
+========================================================= */
+
+#export-db:not(.action-locked),
+#import-db {
+    background:
+        #64748b !important;
+
+    color:
+        #ffffff !important;
+
+    border-color:
+        #64748b !important;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+
+    #export-db:not(.action-locked):hover,
+    #import-db:hover {
+        background:
+            #475569 !important;
+
+        color:
+            #ffffff !important;
+
+        border-color:
+            #475569 !important;
     }
 
-    #history-btn:hover,
-    #export-db:hover,
-    #import-db:hover {
-        background: #eff6ff !important;
-        color: #1d4ed8 !important;
-        border-color: #bfdbfe;
-    }
+}
+
+
+#export-db:not(.action-locked):active,
+#import-db:active {
+    background:
+        #334155 !important;
+
+    color:
+        #ffffff !important;
+
+    border-color:
+        #334155 !important;
+}
 
     #save-report-btn,
     #print-report-btn,
@@ -1303,9 +1454,44 @@ nav p {
         background: #15803d !important;
     }
 
-    #print-report-btn {
-        background: #1e293b !important;
+/* =========================================================
+   列印按鈕
+   比照前面系統正式 Stone 暖灰棕色
+========================================================= */
+
+#print-report-btn,
+#print-inspection-preview-btn {
+    background:
+        #57534e !important;
+
+    border-color:
+        #57534e !important;
+
+    color:
+        #ffffff !important;
+}
+
+#print-report-btn i,
+#print-inspection-preview-btn i {
+    color:
+        #ffffff !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+    #print-report-btn:hover,
+    #print-inspection-preview-btn:hover {
+        background:
+            #44403c !important;
+
+        border-color:
+            #44403c !important;
+
+        color:
+            #ffffff !important;
     }
+
+}
 
     .system-footer {
         background: linear-gradient(135deg, #020617 0%, #111827 100%) !important;
@@ -1441,13 +1627,14 @@ body.is-admin .suggestion-action-buttons {
         sans-serif !important;
 }
 
-/*
- * 權限與密碼設定視窗維持原本字體，
- * 本次不修改其既有外觀。
- */
-#pwd-modal {
+/* =========================================================
+   權限與密碼設定視窗
+   字體比照證照管理系統
+========================================================= */
+#pwd-modal,
+#pwd-modal input,
+#pwd-modal button {
     font-family:
-        'Inter',
         'Noto Sans TC',
         sans-serif !important;
 }
@@ -1486,6 +1673,22 @@ body.is-admin .suggestion-action-buttons {
     border: none !important;
     background-color: #f1f5f9 !important;
     box-shadow: 0 0 0 2px #6366f1 !important;
+}
+
+/* =========================================================
+   權限設定密碼輸入框
+   手機版比照證照管理系統
+========================================================= */
+@media (hover: none) and (pointer: coarse) {
+
+    .permission-password-input {
+        font-size: 16px !important;
+    }
+
+    .permission-password-input::placeholder {
+        font-size: 16px !important;
+    }
+
 }
 
 /* 避免危害系統全域 bg-white / input 樣式影響權限彈窗 */
@@ -2874,11 +3077,6 @@ and (orientation: portrait) {
         white-space: nowrap;
     }
 
-/* 改善單預覽圖示工具列 */
-#inspection-preview-toolbar {
-    padding: 7px 8px !important;
-}
-
 .inspection-preview-toolbar-row {
     flex-wrap: nowrap;
     gap: 5px;
@@ -3749,6 +3947,71 @@ h2 {
 }
 
 
+/* =========================================================
+   缺失改善單預覽工具列
+
+   桌機／手機直式／手機橫式共用：
+   Tooltip 一律由按鈕上方向顯示，
+   避免被下方改善通知單內容遮住。
+========================================================= */
+
+#inspection-preview-toolbar {
+    position:
+        relative;
+
+    z-index:
+        50;
+
+    overflow:
+        visible !important;
+}
+
+
+#inspection-preview-toolbar
+.inspection-preview-toolbar-row,
+#inspection-preview-toolbar
+.inspection-preview-actions {
+    overflow:
+        visible !important;
+}
+
+
+#inspection-preview-scroll {
+    position:
+        relative;
+
+    z-index:
+        1;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+
+    #inspection-preview-toolbar
+    .system-tooltip-btn::after {
+
+        top:
+            auto;
+
+        bottom:
+            calc(100% + 6px);
+
+        transform:
+            translateX(-50%)
+            translateY(2px);
+    }
+
+
+    #inspection-preview-toolbar
+    .system-tooltip-btn:hover::after {
+
+        transform:
+            translateX(-50%)
+            translateY(0);
+    }
+
+}
+
 /* ---------------------------------------------------------
    手機直式：改善單建立視窗與文件預覽
    --------------------------------------------------------- */
@@ -3820,6 +4083,11 @@ and (orientation: portrait) {
         line-height: 1.15 !important;
     }
 
+#inspection-preview-toolbar {
+    padding:
+        7px 8px !important;
+}
+    
 }
 
 /* =========================================================
@@ -4639,6 +4907,36 @@ and (orientation: portrait) {
 }
 
 /* =========================================================
+   手機直式／橫式：
+   雲端中心所有密碼輸入框
+   圓點大小與間距比照系統權限登入密碼框
+========================================================= */
+
+@media screen and (max-width: 950px) {
+
+    [id^="cloud-"][id$="-modal"]
+    input[type="password"] {
+        font-size: 16px !important;
+        line-height: 1.5rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.42em !important;
+    }
+
+
+    /*
+     * 有 placeholder 的密碼欄位
+     * 不讓提示文字也被拉開字距。
+     */
+    [id^="cloud-"][id$="-modal"]
+    input[type="password"]::placeholder {
+        font-size: 16px !important;
+        line-height: 1.5rem !important;
+        font-weight: 400 !important;
+        letter-spacing: 0 !important;
+    }
+}
+
+/* =========================================================
    桌機版：
    開立缺失改善單視窗與帶入內容圖卡精簡
 ========================================================= */
@@ -4754,6 +5052,228 @@ and (orientation: portrait) {
 #cloud-preview-view-password {
     --tw-ring-inset:
         inset;
+}
+
+/* =========================================================
+   手機版：編輯雲端預覽 datetime-local 修正
+========================================================= */
+
+@media screen and (max-width: 950px) {
+
+    #cloud-preview-edit-expiry-wrap {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    #cloud-preview-edit-expiry {
+        display: block !important;
+
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+
+        padding-left: 1rem !important;
+        padding-right: 2.5rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+
+        line-height: 1.25 !important;
+    }
+
+    #cloud-preview-edit-expiry::-webkit-date-and-time-value {
+        min-width: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+
+        text-align: left !important;
+
+        display: flex !important;
+        align-items: center !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #cloud-preview-edit-expiry::-webkit-datetime-edit {
+        min-width: 0 !important;
+        height: 100% !important;
+
+        display: flex !important;
+        align-items: center !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #cloud-preview-edit-expiry::-webkit-calendar-picker-indicator {
+        opacity: 0 !important;
+
+        width: 24px !important;
+        height: 24px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+}
+
+
+/* =========================================================
+   桌機版：編輯雲端預覽有效期限
+========================================================= */
+
+@media screen and (min-width: 951px) {
+
+    #cloud-preview-edit-expiry-wrap
+    > .fa-calendar-days {
+        display: none !important;
+    }
+
+    #cloud-preview-edit-expiry {
+        padding-right: 1rem !important;
+        cursor: pointer;
+    }
+
+}
+
+/* =========================================================
+   手機橫式：雲端中心高度與觸控捲動最佳化
+
+   寬度維持原本 max-w-sm，
+   改由整個 Cloud Center Body 上下捲動。
+========================================================= */
+
+@media screen
+and (orientation: landscape)
+and (max-width: 950px) {
+
+    #cloud-preview-modal {
+        padding:
+            6px
+            16px !important;
+    }
+
+
+    #cloud-center-panel {
+        height:
+            calc(100svh - 12px) !important;
+
+        height:
+            calc(100dvh - 12px) !important;
+
+        max-height:
+            calc(100svh - 12px) !important;
+
+        max-height:
+            calc(100dvh - 12px) !important;
+    }
+
+
+    #cloud-center-body {
+        overflow-x:
+            hidden !important;
+
+        overflow-y:
+            auto !important;
+
+        -webkit-overflow-scrolling:
+            touch;
+
+        overscroll-behavior-y:
+            contain;
+
+        touch-action:
+            pan-y;
+    }
+
+
+    #cloud-preview-viewer-home:not(.hidden),
+    #cloud-preview-publisher-home:not(.hidden),
+    #cloud-preview-publish-view:not(.hidden),
+    #cloud-workspace-view:not(.hidden),
+    #cloud-preview-manage-view:not(.hidden),
+    #cloud-publisher-accounts-view:not(.hidden) {
+
+        flex:
+            0 0 auto !important;
+
+        min-height:
+            auto !important;
+
+        overflow:
+            visible !important;
+    }
+
+
+    #cloud-workspace-list,
+    #cloud-preview-manage-list,
+    #cloud-publisher-accounts-list {
+
+        flex:
+            0 0 auto !important;
+
+        max-height:
+            none !important;
+
+        overflow:
+            visible !important;
+    }
+
+}
+
+/* =========================================================
+   雲端工作資料：建立雲端工作資料
+   統一採用正式 Teal 配色
+========================================================= */
+
+#cloud-workspace-create-btn {
+    background:
+        #0f766e !important;
+
+    color:
+        #ffffff !important;
+
+    border-color:
+        transparent !important;
+
+    box-shadow:
+        0 4px 6px -1px
+        rgba(15, 118, 110, 0.28) !important;
+}
+
+
+/* 桌機滑鼠移入 */
+@media (hover: hover) and (pointer: fine) {
+
+    #cloud-workspace-create-btn:hover {
+        background:
+            #115e59 !important;
+
+        color:
+            #ffffff !important;
+
+        box-shadow:
+            0 7px 14px -3px
+            rgba(15, 118, 110, 0.34) !important;
+    }
+
+}
+
+
+/* 點擊狀態 */
+#cloud-workspace-create-btn:active {
+    background:
+        #134e4a !important;
+
+    color:
+        #ffffff !important;
 }
 
     </style>
@@ -4886,9 +5406,11 @@ and (orientation: portrait) {
         id="data-action-buttons"
         class="grid grid-cols-2 gap-2"
     >
-        <!-- 第一排左側：資料管理標題 -->
+
+        <!-- 第一排：資料管理標題 -->
         <h3
             class="
+                col-span-2
                 text-sm
                 font-bold
                 text-slate-700
@@ -4915,58 +5437,81 @@ and (orientation: portrait) {
             </span>
         </h3>
 
-        <!-- 第一排右側：雲端中心 -->
-        <button
-            id="cloud-preview-entry-btn"
-            type="button"
-            onclick="openCloudPreviewModal()"
-            class="
-                db-action-btn
-                cloud-center-entry-btn
-            "
-            aria-label="雲端中心"
-        >
-            <i
-                class="fas fa-cloud"
-                aria-hidden="true"
-            ></i>
 
-            <span>
-                雲端中心
-            </span>
-        </button>
+<!-- 第二排左側：匯出資料 -->
+<button
+    id="export-db"
+    type="button"
+    class="db-action-btn"
+>
+    <i
+        class="fas fa-share-nodes"
+        aria-hidden="true"
+    ></i>
 
-        <!-- 第二排左側：匯出資料 -->
-        <button
-            id="export-db"
-            type="button"
-            class="db-action-btn"
-        >
-            <i
-                class="fas fa-share-nodes"
-                aria-hidden="true"
-            ></i>
+    <span>
+        匯出資料
+    </span>
+</button>
 
-            <span>
-                匯出資料
-            </span>
-        </button>
 
-        <!-- 第二排右側：載入預覽 -->
-        <button
-            id="import-db"
-            type="button"
-            class="db-action-btn"
-        >
-            <i
-                class="fas fa-file-import"
-                aria-hidden="true"
-            ></i>
+<!-- 第二排右側：載入預覽／載入資料／匯入資料 -->
+<button
+    id="import-db"
+    type="button"
+    class="db-action-btn"
+>
+    <i
+        class="fas fa-file-import"
+        aria-hidden="true"
+    ></i>
 
-            <span>
-                載入預覽
-            </span>
-        </button>
+    <span>
+        載入預覽
+    </span>
+</button>
+
+
+<!-- 第三排左側：雲端中心 -->
+<button
+    id="cloud-preview-entry-btn"
+    type="button"
+    onclick="openCloudPreviewModal()"
+    class="
+        db-action-btn
+        cloud-center-entry-btn
+    "
+    aria-label="雲端中心"
+>
+    <i
+        class="fas fa-cloud"
+        aria-hidden="true"
+    ></i>
+
+    <span>
+        雲端中心
+    </span>
+</button>
+
+
+<!-- 第三排右側：OSAI 平台 -->
+<button
+    id="osai-platform-btn"
+    type="button"
+    onclick="openOsaiPlatform()"
+    class="db-action-btn"
+    aria-label="切換至 OSAI 管理平台"
+>
+    <i
+        class="fas fa-layer-group"
+        aria-hidden="true"
+    ></i>
+
+    <span>
+        OSAI 平台
+    </span>
+</button>
+
 
         <input
             type="file"
@@ -4974,6 +5519,7 @@ and (orientation: portrait) {
             class="hidden"
             accept=".json"
         >
+
     </div>
 </div>
 
@@ -5710,63 +6256,6 @@ class="hidden
 
 </div>
 
-
-<!-- 目前已載入 Workspace 狀態 -->
-<div id="cloud-workspace-active-actions"
-     class="hidden mb-2.5">
-
-    <div class="
-        rounded-xl
-        border border-blue-100
-        bg-blue-50/60
-        px-3 py-2.5
-    ">
-
-        <div class="
-            flex items-center
-            justify-between
-            gap-3
-        ">
-
-            <div class="min-w-0">
-
-                <p class="
-                    text-[10px]
-                    font-bold
-                    text-blue-500
-                ">
-                    目前雲端工作資料
-                </p>
-
-                <p id="cloud-workspace-active-name"
-                   class="
-                       mt-0.5
-                       text-xs
-                       font-black
-                       text-slate-700
-                       truncate
-                   ">
-                </p>
-
-            </div>
-
-            <span id="cloud-workspace-active-revision"
-                  class="
-                      shrink-0
-                      px-2 py-1
-                      rounded-full
-                      bg-blue-100
-                      text-blue-700
-                      text-[9px]
-                      font-black
-                  ">
-            </span>
-
-        </div>
-
-    </div>
-
-</div>
 
     <!-- Workspace 清單 -->
     <div id="cloud-workspace-list"
@@ -6808,56 +7297,55 @@ class="hidden
             </div>
 
 
-            <!-- 新預覽密碼 -->
-            <div>
+<!-- 有效期限 -->
+<div>
 
-                <label for="cloud-preview-edit-password"
-                       class="block text-xs
-                              font-bold text-slate-600 mb-1">
-                    新預覽密碼
-                </label>
+    <label for="cloud-preview-edit-expiry"
+           class="block text-xs
+                  font-bold text-slate-600 mb-1">
+        有效期限
+    </label>
 
-                <input type="password"
-                       id="cloud-preview-edit-password"
-                       autocomplete="new-password"
-                       class="w-full h-11 px-4
-                              bg-slate-100
-                              border-none
-                              rounded-xl
-                              focus:ring-2
-                              focus:ring-sky-500
-                              outline-none
-                              text-sm text-slate-700">
+    <div id="cloud-preview-edit-expiry-wrap"
+         class="relative
+                w-full min-w-0 max-w-full
+                overflow-hidden
+                rounded-xl">
 
-                <p class="mt-1 text-[10px]
-                          text-slate-400 leading-snug">
-                    如不需要變更密碼，請保持空白。
-                </p>
+        <input type="datetime-local"
+               id="cloud-preview-edit-expiry"
+               onclick="
+                   if (typeof this.showPicker === 'function') {
+                       try {
+                           this.showPicker();
+                       } catch (error) {}
+                   }
+               "
+               class="block
+                      w-full min-w-0 max-w-full
+                      h-11
+                      pl-4 pr-10
+                      box-border
+                      bg-slate-100
+                      border-none
+                      rounded-xl
+                      focus:ring-2
+                      focus:ring-sky-500
+                      outline-none
+                      text-sm text-slate-700">
 
-            </div>
+        <i class="fa-solid fa-calendar-days
+                  absolute
+                  right-3 top-1/2
+                  -translate-y-1/2
+                  text-slate-400
+                  text-sm
+                  pointer-events-none"
+           aria-hidden="true"></i>
 
+    </div>
 
-            <!-- 有效期限 -->
-            <div>
-
-                <label for="cloud-preview-edit-expiry"
-                       class="block text-xs
-                              font-bold text-slate-600 mb-1">
-                    有效期限
-                </label>
-
-                <input type="datetime-local"
-                       id="cloud-preview-edit-expiry"
-                       class="w-full h-11 px-4
-                              bg-slate-100
-                              border-none
-                              rounded-xl
-                              focus:ring-2
-                              focus:ring-sky-500
-                              outline-none
-                              text-sm text-slate-700">
-
-            </div>
+</div>
 
 
             <!-- 可開啟次數 -->
@@ -6956,7 +7444,7 @@ class="hidden
 </div>
 
 <!-- =========================================================
-     雲端預覽：重設預覽密碼
+     雲端預覽：變更預覽密碼
 ========================================================= -->
 <div id="cloud-preview-password-reset-modal"
      onpointerdown="closeCloudPreviewPasswordResetModalOutside(event)"
@@ -7030,7 +7518,7 @@ class="bg-white
     </svg>
 
                 <h3 class="text-lg font-black">
-                    重設預覽密碼
+                    變更預覽密碼
                 </h3>
 
             </div>
@@ -7040,7 +7528,7 @@ class="bg-white
                       text-slate-300
                       tracking-[0.14em]
                       font-semibold">
-                RESET PREVIEW PASSWORD
+                CHANGE PREVIEW PASSWORD
             </p>
 
         </div>
@@ -7366,34 +7854,50 @@ gap-1.5">
 
 <div id="pwd-modal" onclick="event.stopPropagation()" class="bg-white w-full max-w-sm rounded-2xl shadow-2xl scale-in-center hidden">
     <div class="p-5">
-        <div class="flex flex-col items-center text-center mb-3">
-            <div class="bg-yellow-50 p-2 rounded-full mb-2">
-                <i data-lucide="key-round" class="w-6 h-6 text-yellow-600"></i>
-            </div>
-            <h2 class="text-lg font-black text-slate-800">權限與密碼設定</h2>
-            <p class="text-xs text-slate-500 mt-1">僅管理者可修改密碼與使用者權限</p>
-        </div>
+<div class="flex flex-col items-center text-center mb-3">
+
+    <div class="bg-yellow-50 p-2 rounded-full mb-1.5">
+        <i data-lucide="key-round"
+           class="w-6 h-6 text-yellow-600"></i>
+    </div>
+
+    <p class="
+        text-[11px]
+        text-slate-500
+        tracking-[0.14em]
+        font-semibold
+        leading-none
+        mb-1.5
+    ">
+        ACCESS SETTINGS
+    </p>
+
+    <h2 class="text-lg font-black text-slate-800">
+        權限與密碼設定
+    </h2>
+
+</div>
 
         <div class="space-y-2">
             <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">目前管理者密碼</label>
-                <input type="password" id="old-pwd"
-                       class="w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
-                       placeholder="••••••">
+<input type="password" id="old-pwd"
+       class="permission-password-input w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
+       placeholder="••••••">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">新管理者密碼</label>
-                <input type="password" id="new-pwd"
-                       class="w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
-                       placeholder="••••••">
+<input type="password" id="new-pwd"
+       class="permission-password-input w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
+       placeholder="••••••">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">新使用者密碼</label>
-                <input type="password" id="editor-pwd-input"
-                       class="w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
-                       placeholder="••••••">
+<input type="password" id="editor-pwd-input"
+       class="permission-password-input w-full px-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 transition outline-none text-sm text-slate-900"
+       placeholder="••••••">
             </div>
 
 <label class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
@@ -7414,14 +7918,25 @@ gap-1.5">
 
             <p id="pwd-change-error" class="hidden text-[11px] text-red-500 font-bold"></p>
 
-            <div class="flex gap-2 pt-1">
-                <button id="do-change-pwd" class="flex-1 bg-indigo-600 text-white py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition text-xs">
-                    儲存設定
-                </button>
-                <button onclick="closeModals()" class="flex-1 bg-slate-100 text-slate-600 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition text-xs">
-                    取消
-                </button>
-            </div>
+<div class="flex gap-2 pt-1">
+
+    <button
+        onclick="closeModals()"
+        class="flex-1 bg-slate-100 text-slate-600 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition text-xs">
+        取消
+    </button>
+
+    <button
+        id="do-change-pwd"
+        class="flex-1 bg-indigo-600 text-white py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition text-xs flex items-center justify-center gap-1.5">
+
+        <i class="fa-solid fa-floppy-disk"></i>
+
+        <span>儲存設定</span>
+
+    </button>
+
+</div>
         </div>
     </div>
 </div>
@@ -7716,11 +8231,18 @@ gap-1.5">
                 <label class="block text-xs font-bold text-slate-600 mb-1">
                     稽查日期
                 </label>
-                <input
-                    id="inspection-date"
-                    type="date"
-                    class="w-full p-2.5 border rounded text-sm"
-                >
+<input
+    id="inspection-date"
+    type="date"
+    onclick="
+        if (typeof this.showPicker === 'function') {
+            try {
+                this.showPicker();
+            } catch (error) {}
+        }
+    "
+    class="w-full p-2.5 border rounded text-sm"
+>
             </div>
 
             <div>
@@ -7775,11 +8297,18 @@ gap-1.5">
                 <label class="block text-xs font-bold text-slate-600 mb-1">
                     改善期限
                 </label>
-                <input
-                    id="inspection-due-date"
-                    type="date"
-                    class="w-full p-2.5 border rounded text-sm"
-                >
+<input
+    id="inspection-due-date"
+    type="date"
+    onclick="
+        if (typeof this.showPicker === 'function') {
+            try {
+                this.showPicker();
+            } catch (error) {}
+        }
+    "
+    class="w-full p-2.5 border rounded text-sm"
+>
             </div>
 
             <div>
@@ -8430,6 +8959,23 @@ gap-1.5">
 const DEFAULT_ADMIN_PASSWORD = "admincore1098";
 const DEFAULT_EDITOR_PASSWORD = "teamuser001";
 const DEFAULT_EDITOR_ENABLED = true;
+
+
+const OSAI_PLATFORM_URL =
+    'https://osai-core.vercel.app/';
+
+const OSAI_PLATFORM_WINDOW_NAME =
+    'OSAI_PLATFORM';
+
+function openOsaiPlatform() {
+
+    window.open(
+        OSAI_PLATFORM_URL,
+        OSAI_PLATFORM_WINDOW_NAME,
+        'noopener,noreferrer'
+    );
+}
+
 
 const MASTER_RECOVERY_CODE = "SAM-SUN-CORE-RECOVERY";
 
@@ -9456,29 +10002,29 @@ function setCloudPreviewViewerBusy(
     button.disabled =
         busy;
 
-    if (busy) {
-        /*
-         * 忙碌時保留原本按鈕顏色，
-         * 只加入旋轉圖示。
-         */
-        button.classList.remove(
-            'opacity-60'
-        );
+if (busy) {
+    /*
+     * 忙碌時保留原本按鈕顏色，
+     * 並維持雲端載入圖示。
+     */
+    button.classList.remove(
+        'opacity-60'
+    );
 
-        button.classList.add(
-            'cursor-wait'
-        );
+    button.classList.add(
+        'cursor-wait'
+    );
 
-        button.innerHTML = `
-            <i class="fas fa-spinner fa-spin"
-               aria-hidden="true"></i>
+    button.innerHTML = `
+        <i class="fas fa-cloud-arrow-down"
+           aria-hidden="true"></i>
 
-            <span>
-                正在載入...
-            </span>
-        `;
+        <span>
+            正在載入...
+        </span>
+    `;
 
-    } else {
+} else {
         button.classList.remove(
             'opacity-60',
             'cursor-wait'
@@ -15334,37 +15880,30 @@ ${toggleEnabledMarkup}
                     </button>
 
 
-                    <!-- 永久刪除 -->
-                    <button
-                        type="button"
-                        data-workspace-id="${id}"
-                        data-workspace-name="${name}"
-                        onclick="deleteCloudWorkspaceFromButton(this)"
-class="
-    cloud-tooltip-btn
-    w-7 h-7
-    rounded-lg
-    text-red-500
-    hover:text-red-600
-    transition
-    flex
-    items-center
-    justify-center
-"
-                        data-tooltip="刪除"
-                        aria-label="刪除">
+<!-- 永久刪除 -->
+<button
+    type="button"
+    data-workspace-id="${id}"
+    data-workspace-name="${name}"
+    onclick="deleteCloudWorkspaceFromButton(this)"
+    class="
+        cloud-tooltip-btn
+        w-7 h-7
+        rounded-lg
+        text-red-500
+        flex
+        items-center
+        justify-center
+    "
+    data-tooltip="刪除"
+    aria-label="刪除">
 
-<svg viewBox="0 0 24 24"
-     class="w-[17px] h-[17px]"
-     aria-hidden="true">
-    <path fill="currentColor"
-          d="M9 3.5h6l.8 1.7H20a1 1 0 1 1 0 2H4a1 1 0 0 1 0-2h4.2L9 3.5Z"></path>
+    <i
+        class="fa-solid fa-trash"
+        aria-hidden="true">
+    </i>
 
-    <path fill="currentColor"
-          d="M6.2 8.7h11.6l-.8 10.1A2.5 2.5 0 0 1 14.5 21h-5a2.5 2.5 0 0 1-2.5-2.2L6.2 8.7Zm3.2 2.2a.8.8 0 0 0-.8.8l.3 5.6a.8.8 0 0 0 1.6-.1l-.3-5.6a.8.8 0 0 0-.8-.7Zm5.2 0a.8.8 0 0 0-.8.7l-.3 5.6a.8.8 0 1 0 1.6.1l.3-5.6a.8.8 0 0 0-.8-.8Z"></path>
-</svg>
-
-                    </button>
+</button>
                 `
                 : ''
         }
@@ -15405,18 +15944,18 @@ class="
     }
 
 
-    <span class="
-        shrink-0
-        px-2 py-0.5
-        rounded-full
-        bg-emerald-100
-        text-emerald-700
-        text-[9px]
-        font-black
-        whitespace-nowrap
-    ">
-        Revision ${revision}
-    </span>
+<span class="
+    shrink-0
+    px-2 py-0.5
+    rounded-full
+    bg-blue-100
+    text-blue-700
+    text-[9px]
+    font-black
+    whitespace-nowrap
+">
+    Revision ${revision}
+</span>
 
 </div>
 
@@ -20903,7 +21442,7 @@ const toggleEnabledClass =
     </div>
 
 
-<!-- 重設預覽密碼 -->
+<!-- 變更預覽密碼 -->
 <button type="button"
         data-preview-id="${previewId}"
         data-preview-name="${previewName}"
@@ -20922,8 +21461,8 @@ hover:border-indigo-200
             flex items-center
             justify-center
         "
-        data-tooltip="重設密碼"
-        aria-label="重設密碼">
+        data-tooltip="變更密碼"
+        aria-label="變更密碼">
 
 <svg viewBox="0 0 24 24"
      fill="none"
@@ -21020,41 +21559,30 @@ ${toggleEnabledIconHtml}
         </button>
 
 
-        <!-- 永久刪除 -->
-        <button type="button"
-                data-preview-id="${previewId}"
-                data-preview-name="${previewName}"
-                onclick="deleteCloudPreviewFromButton(this)"
-                class="
-                    cloud-tooltip-btn
-                    w-7 h-7
-                    rounded-lg
-                    border border-red-100
-                    bg-red-50
-                    text-red-500
-                    hover:bg-red-100
-                    hover:border-red-200
-                    hover:text-red-600
-                    transition
-                    flex items-center
-                    justify-center
-                "
-                data-tooltip="刪除"
-                aria-label="刪除">
+<!-- 永久刪除 -->
+<button
+    type="button"
+    data-preview-id="${previewId}"
+    data-preview-name="${previewName}"
+    onclick="deleteCloudPreviewFromButton(this)"
+    class="
+        cloud-tooltip-btn
+        w-7 h-7
+        rounded-lg
+        text-red-500
+        flex
+        items-center
+        justify-center
+    "
+    data-tooltip="刪除"
+    aria-label="刪除">
 
-<svg viewBox="0 0 24 24"
-     class="w-[17px] h-[17px]"
-     aria-hidden="true">
+    <i
+        class="fa-solid fa-trash"
+        aria-hidden="true">
+    </i>
 
-    <path fill="currentColor"
-          d="M9 3.5h6l.8 1.7H20a1 1 0 1 1 0 2H4a1 1 0 0 1 0-2h4.2L9 3.5Z"></path>
-
-    <path fill="currentColor"
-          d="M6.2 8.7h11.6l-.8 10.1A2.5 2.5 0 0 1 14.5 21h-5a2.5 2.5 0 0 1-2.5-2.2L6.2 8.7Zm3.2 2.2a.8.8 0 0 0-.8.8l.3 5.6a.8.8 0 0 0 1.6-.1l-.3-5.6a.8.8 0 0 0-.8-.7Zm5.2 0a.8.8 0 0 0-.8.7l-.3 5.6a.8.8 0 1 0 1.6.1l.3-5.6a.8.8 0 0 0-.8-.8Z"></path>
-
-</svg>
-
-        </button>
+</button>
 
     </div>
 
@@ -21368,7 +21896,7 @@ async function loadCloudPreviewManageList() {
 }
 
 /* =========================================================
-   重設雲端預覽密碼
+   變更雲端預覽密碼
 ========================================================= */
 
 function setCloudPreviewPasswordResetStatus(
@@ -21439,7 +21967,7 @@ function openCloudPreviewPasswordResetModalFromButton(
         role !== 'editor'
     ) {
         showToast(
-            '目前權限無法重設雲端預覽密碼。',
+            '目前權限無法變更雲端預覽密碼。',
             'error'
         );
 
@@ -21463,7 +21991,7 @@ function openCloudPreviewPasswordResetModalFromButton(
 
     if (!previewId) {
         setCloudPreviewManageStatus(
-            '找不到要重設密碼的雲端預覽。',
+            '找不到要變更密碼的雲端預覽。',
             'error'
         );
 
@@ -21610,7 +22138,7 @@ async function submitCloudPreviewPasswordReset() {
         role !== 'editor'
     ) {
         showToast(
-            '目前權限無法重設雲端預覽密碼。',
+            '目前權限無法變更雲端預覽密碼。',
             'error'
         );
 
@@ -21673,7 +22201,7 @@ async function submitCloudPreviewPasswordReset() {
     if (!previewId) {
 
         setCloudPreviewPasswordResetStatus(
-            '找不到要重設密碼的雲端預覽。'
+            '找不到要變更密碼的雲端預覽。'
         );
 
         return;
@@ -21792,7 +22320,7 @@ saveButton.classList.add(
 
 
         let message =
-            '重設預覽密碼失敗，請稍後再試。';
+            '變更預覽密碼失敗，請稍後再試。';
 
 
         if (
@@ -21809,7 +22337,7 @@ saveButton.classList.add(
         ) {
 
             message =
-                '此帳號沒有重設這筆雲端預覽密碼的權限。';
+                '此帳號沒有變更這筆雲端預覽密碼的權限。';
 
         } else if (
             error?.status ===
@@ -22048,12 +22576,6 @@ function openCloudPreviewEditModalFromButton(
         );
 
 
-    const passwordInput =
-        document.getElementById(
-            'cloud-preview-edit-password'
-        );
-
-
     const expiryInput =
         document.getElementById(
             'cloud-preview-edit-expiry'
@@ -22104,16 +22626,6 @@ function openCloudPreviewEditModalFromButton(
     if (nameInput) {
         nameInput.value =
             previewName;
-    }
-
-
-    /*
-     * 後端不會回傳原密碼，
-     * 因此預設保持空白。
-     */
-    if (passwordInput) {
-        passwordInput.value =
-            '';
     }
 
 
@@ -22186,18 +22698,6 @@ function closeCloudPreviewEditModal() {
         );
 
 
-    const passwordInput =
-        document.getElementById(
-            'cloud-preview-edit-password'
-        );
-
-
-    if (passwordInput) {
-        passwordInput.value =
-            '';
-    }
-
-
     setCloudPreviewEditStatus(
         ''
     );
@@ -22240,12 +22740,6 @@ async function submitCloudPreviewEdit() {
     const nameInput =
         document.getElementById(
             'cloud-preview-edit-name'
-        );
-
-
-    const passwordInput =
-        document.getElementById(
-            'cloud-preview-edit-password'
         );
 
 
@@ -22310,13 +22804,6 @@ async function submitCloudPreviewEdit() {
             nameInput?.value ||
             ''
         ).trim();
-
-
-    const previewPassword =
-        String(
-            passwordInput?.value ||
-            ''
-        );
 
 
     const expiresLocal =
@@ -22469,21 +22956,6 @@ async function submitCloudPreviewEdit() {
     ) {
         request.max_views =
             maxViews;
-
-        hasChanges =
-            true;
-    }
-
-
-    /*
-     * 密碼留白代表沿用舊密碼。
-     */
-    if (
-        previewPassword.length >
-        0
-    ) {
-        request.preview_password =
-            previewPassword;
 
         hasChanges =
             true;
@@ -23206,9 +23678,67 @@ function markHazardWorkspaceDirty() {
 }
 
 
+function updateInspectionDraftEntryButtonState() {
+
+    const button =
+        document.getElementById(
+            "create-inspection-btn"
+        );
+
+    if (!button) {
+        return;
+    }
+
+
+    const hasHazards =
+        !!base64Image &&
+        Array.isArray(
+            currentReportData?.hazards
+        ) &&
+        currentReportData.hazards.length > 0;
+
+
+    /*
+     * 正常狀態：
+     * 必須有危害資料才能開立改善單。
+     *
+     * 草稿狀態：
+     * 即使主畫面目前沒有危害資料，
+     * 仍必須允許返回尚未儲存的改善單。
+     */
+    button.disabled =
+        !(
+            canEditData() &&
+            (
+                hasHazards ||
+                inspectionDraftDirty
+            )
+        );
+
+
+    const label =
+        inspectionDraftDirty
+            ? "繼續編輯改善單"
+            : "開立改善單";
+
+
+    button.setAttribute(
+        "data-tooltip",
+        label
+    );
+
+    button.setAttribute(
+        "aria-label",
+        label
+    );
+}
+
+
 function markInspectionDraftDirty() {
     if (canEditData()) {
         inspectionDraftDirty = true;
+
+        updateInspectionDraftEntryButtonState();
     }
 }
 
@@ -23232,6 +23762,8 @@ function clearWorkProtectionState() {
     hazardWorkspaceDirty = false;
     inspectionDraftDirty = false;
     sessionNeedsExport = false;
+
+    updateInspectionDraftEntryButtonState();
 }
 
 
@@ -24615,6 +25147,36 @@ createInspectionBtn: document.getElementById('create-inspection-btn'),
         };
 
 function closeModals() {
+
+    const inspectionCreateModal =
+        document.getElementById(
+            "inspection-create-modal"
+        );
+
+    const inspectionPreviewModal =
+        document.getElementById(
+            "inspection-preview-modal"
+        );
+
+
+    const isClosingUnsavedInspectionDraft =
+        inspectionDraftDirty &&
+        (
+            (
+                inspectionCreateModal &&
+                !inspectionCreateModal
+                    .classList
+                    .contains("hidden")
+            ) ||
+            (
+                inspectionPreviewModal &&
+                !inspectionPreviewModal
+                    .classList
+                    .contains("hidden")
+            )
+        );
+
+
     elements.modalOverlay.classList.add(
         "hidden"
     );
@@ -24622,8 +25184,22 @@ function closeModals() {
     Array.from(
         elements.modalOverlay.children
     ).forEach(child => {
-        child.classList.add("hidden");
+        child.classList.add(
+            "hidden"
+        );
     });
+
+
+    if (
+        isClosingUnsavedInspectionDraft
+    ) {
+
+        updateInspectionDraftEntryButtonState();
+
+        showToast(
+            "尚未儲存的改善單草稿已保留，可再次點擊「開立改善單」圖示繼續編輯。"
+        );
+    }
 }
 
 function closeModalsOutside(event) {
@@ -25213,16 +25789,29 @@ function updateUIVisibility() {
         );
     }
 
-    /*
-     * 第一筆危害建立後才可開立改善單。
-     */
-    if (elements.createInspectionBtn) {
-        elements.createInspectionBtn.disabled =
-            !(
-                canEditData() &&
-                hasHazards
-            );
-    }
+/*
+ * 第一筆危害建立後可開立改善單。
+ *
+ * 若已有尚未儲存的改善單草稿，
+ * 即使目前主畫面沒有危害資料，
+ * 仍必須允許使用者返回草稿繼續編輯。
+ */
+if (elements.createInspectionBtn) {
+
+    const hasInspectionDraft =
+        inspectionDraftDirty;
+
+    elements.createInspectionBtn.disabled =
+        !(
+            canEditData() &&
+            (
+                hasHazards ||
+                hasInspectionDraft
+            )
+        );
+
+    updateInspectionDraftEntryButtonState();
+}
 }
 
 function escapeInspectionHtml(value) {
@@ -25377,14 +25966,41 @@ async function findInspectionBySourceReportId(
 }
 
 async function openInspectionCreateModal() {
-    if (!canEditData()) {
-        return showToast(
-            "請先登入使用者或管理者權限，才能開立改善單。",
-            "error"
-        );
-    }
+if (!canEditData()) {
+    return showToast(
+        "請先登入使用者或管理者權限，才能開立改善單。",
+        "error"
+    );
+}
 
-    if (!base64Image) {
+
+/*
+ * 若目前已存在尚未儲存的改善單草稿，
+ * 優先返回原草稿。
+ *
+ * 不重新建立資料、
+ * 不清除欄位、
+ * 不觸發放棄草稿確認。
+ */
+if (inspectionDraftDirty) {
+
+    showModal(
+        "inspection-create-modal"
+    );
+
+    updateInspectionDraftEntryButtonState();
+
+    initIcons();
+
+    showToast(
+        "已返回尚未儲存的缺失改善單草稿。"
+    );
+
+    return;
+}
+
+
+if (!base64Image) {
         return showToast(
             "請先上傳現場照片。",
             "error"
@@ -26127,6 +26743,10 @@ renderInspectionDocument(
  */
 inspectionDraftDirty =
     false;
+
+updateInspectionDraftEntryButtonState();
+
+updateUIVisibility();
 
 markSessionNeedsExport();
 
@@ -28024,7 +28644,7 @@ async function renderInspectionAttachmentList() {
                         <button
                             type="button"
                             onclick="openInspectionAttachment(${file.id})"
-                            class="bg-white border border-blue-200 text-blue-500 text-xs p-1.5 rounded hover:bg-blue-50 hover:text-blue-700 transition"
+                            class="bg-white border border-blue-200 text-blue-500 text-xs p-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 transition"
                             title="預覽附件"
                             aria-label="預覽附件"
                         >
@@ -28037,7 +28657,7 @@ async function renderInspectionAttachmentList() {
                                     <button
                                         type="button"
                                         onclick="deleteInspectionAttachment(${file.id})"
-                                        class="bg-white border border-red-200 text-red-500 text-xs p-1.5 rounded hover:bg-red-50 transition"
+                                        class="bg-white border border-red-200 text-red-500 text-xs p-1.5 rounded-xl hover:bg-red-50 transition"
                                         title="刪除附件"
                                         aria-label="刪除附件"
                                     >
@@ -29543,8 +30163,7 @@ return `
 <button
     type="button"
     onclick="deleteInspectionReport(${report.id})"
-    class="bg-white border border-red-200 text-red-500 text-xs p-1.5 rounded hover:bg-red-50 transition"
-    title="刪除改善單"
+    class="text-red-500 hover:text-red-600 text-xs p-1.5 transition"
     aria-label="刪除改善單"
 >
     <i class="fas fa-trash"></i>
@@ -29662,15 +30281,22 @@ async id => {
 
     markSessionNeedsExport();    
 
-    if (
-        currentInspectionDraft &&
-        Number(
-            currentInspectionDraft.id
-        ) ===
-        Number(id)
-    ) {
-        currentInspectionDraft = null;
-    }
+if (
+    currentInspectionDraft &&
+    Number(
+        currentInspectionDraft.id
+    ) ===
+    Number(id)
+) {
+    currentInspectionDraft = null;
+
+    inspectionDraftDirty =
+        false;
+
+    updateInspectionDraftEntryButtonState();
+
+    updateUIVisibility();
+}
 
     showToast(
         "稽查改善報告及其附件已刪除。"
@@ -29720,6 +30346,8 @@ if (!report) {
  */
 if (shouldDiscardInspectionDraft) {
     inspectionDraftDirty = false;
+
+    updateInspectionDraftEntryButtonState();
 }
 
 inspectionPreviewOpenedFromHistory =
@@ -29821,7 +30449,7 @@ if (
                             </div>
                             <div class="flex mt-3 space-x-2">
                                 <button onclick="previewHistory(${report.id})" class="flex-1 bg-white border border-blue-200 text-blue-600 text-xs py-1.5 rounded hover:bg-blue-50 transition">查看預覽</button>
-                                ${canDeleteData() ? `<button onclick="deleteHistory(${report.id})" class="bg-white border border-red-200 text-red-500 text-xs p-1.5 rounded hover:bg-red-50 transition"><i class="fas fa-trash"></i></button>` : ''}
+                                ${canDeleteData() ? `<button onclick="deleteHistory(${report.id})" class="text-red-500 hover:text-red-600 text-xs p-1.5 transition" aria-label="刪除報告"><i class="fas fa-trash"></i></button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -30953,13 +31581,63 @@ document.getElementById('undo-photo-action').onclick = () => {
 
 document.getElementById('reset-photo-action').onclick = () => {
 
-    if (!base64Image && (!currentReportData.hazards || currentReportData.hazards.length === 0)) {
-        return showToast("目前已是原始畫面。");
+    if (
+        !base64Image &&
+        (
+            !currentReportData.hazards ||
+            currentReportData.hazards.length === 0
+        ) &&
+        !inspectionDraftDirty
+    ) {
+        return showToast(
+            "目前已是原始畫面。"
+        );
     }
 
-    if (!confirm("確定要清除目前照片與識別結果，回到初始畫面嗎？")) {
+
+    const resetConfirmMessage =
+        inspectionDraftDirty
+            ? (
+                "目前有尚未儲存的缺失改善單內容。\n\n" +
+                "回到原始畫面將一併放棄這份改善單草稿，" +
+                "並清除目前照片與識別結果。\n\n" +
+                "確定要繼續嗎？"
+            )
+            : (
+                "確定要清除目前照片與識別結果，" +
+                "回到初始畫面嗎？"
+            );
+
+
+    if (
+        !confirm(
+            resetConfirmMessage
+        )
+    ) {
         return;
     }
+
+
+    /*
+     * 使用者已明確確認回到原始畫面。
+     *
+     * 若目前有尚未儲存的改善單草稿，
+     * 一併正式放棄。
+     *
+     * 已正式儲存在歷史報告中的改善單
+     * 不受影響。
+     */
+    if (inspectionDraftDirty) {
+
+        currentInspectionDraft =
+            null;
+
+        inspectionDraftDirty =
+            false;
+
+        updateInspectionDraftEntryButtonState();
+    }
+
 
     pushUndoState();
 
