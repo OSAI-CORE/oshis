@@ -25953,19 +25953,142 @@ function normalizeHazardData() {
         box_2d: h.box_2d || null
     }));
 
-currentReportData.suggestions = currentReportData.suggestions.map((s) => {
-    if (typeof s === "string") {
-        return {
-            text: s,
-            hazardIds: []
-        };
-    }
+currentReportData.suggestions =
+    currentReportData.suggestions.map(
+        (s) => {
 
-    return {
-        text: s.text || "",
-        hazardIds: Array.isArray(s.hazardIds) ? s.hazardIds : []
-    };
-});
+            /*
+             * 舊版資料相容：
+             * 舊報告若仍是純文字改善建議，
+             * 保持原本方式載入。
+             */
+            if (
+                typeof s === "string"
+            ) {
+                return {
+                    text: s,
+                    hazardIds: []
+                };
+            }
+
+
+            /*
+             * 已經存在正式 hazardIds 時，
+             * 優先沿用。
+             *
+             * 適用於：
+             * - 人工建立的改善建議
+             * - 已儲存歷史報告
+             * - JSON 載入資料
+             */
+            if (
+                Array.isArray(
+                    s.hazardIds
+                ) &&
+                s.hazardIds.length > 0
+            ) {
+                return {
+                    text:
+                        s.text || "",
+
+                    hazardIds:
+                        [
+                            ...new Set(
+                                s.hazardIds
+                            )
+                        ]
+                };
+            }
+
+
+            /*
+             * AI 新格式：
+             *
+             * hazard_indexes 採 1 起算。
+             *
+             * 例如：
+             * [1, 3]
+             *
+             * 代表 hazards 陣列中的
+             * 第 1 與第 3 個危害。
+             */
+            const aiHazardIndexes =
+                Array.isArray(
+                    s.hazard_indexes
+                )
+                    ? s.hazard_indexes
+                    : Array.isArray(
+                        s.hazardIndexes
+                    )
+                        ? s.hazardIndexes
+                        : [];
+
+
+            /*
+             * 將 AI 的危害序號
+             * 轉成系統正式使用的 Hazard ID。
+             */
+            const mappedHazardIds =
+                aiHazardIndexes
+                    .map(
+                        value => {
+
+                            const index =
+                                Number(
+                                    value
+                                ) - 1;
+
+
+                            if (
+                                !Number.isInteger(
+                                    index
+                                ) ||
+                                index < 0 ||
+                                index >=
+                                    currentReportData
+                                        .hazards
+                                        .length
+                            ) {
+                                return null;
+                            }
+
+
+                            const hazard =
+                                currentReportData
+                                    .hazards[
+                                        index
+                                    ];
+
+
+                            if (!hazard) {
+                                return null;
+                            }
+
+
+                            return (
+                                hazard.id ||
+                                null
+                            );
+
+                        }
+                    )
+                    .filter(Boolean);
+
+
+            return {
+                text:
+                    s.text || "",
+
+                hazardIds:
+                    [
+                        ...new Set(
+                            mappedHazardIds
+                        )
+                    ]
+            };
+
+        }
+    );
 
 }
         
@@ -31426,7 +31549,10 @@ function createAnnotatedImageForPrint() {
 }
         function setLoading(l) {
             elements.analyzeBtn.disabled = l;
-            elements.btnText.innerText = l ? "正在識別與檢索法規..." : "開始 AI 自動識別";
+            elements.btnText.innerText =
+    l
+        ? "正在識別與檢索法規..."
+        : "啟動 AI 危害識別";
             elements.btnLoader.classList.toggle('hidden', !l);
             elements.resultsContainer.classList.toggle('opacity-50', l);
             elements.resultsContainer.style.pointerEvents = l ? 'none' : 'auto';
