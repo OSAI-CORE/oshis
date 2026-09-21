@@ -27086,30 +27086,125 @@ strong,
     font-weight: 900;
 }
 
+/* =========================================================
+   臨時列印頁：返回系統工具列
+   僅供手機／桌機畫面查看，正式 PDF 不列印
+========================================================= */
+
 .print-return-bar {
     display: flex;
-    justify-content: center;
-    padding: 10px;
-    background: #f8fafc;
+    align-items: center;
+    justify-content: flex-start;
+
+    padding: 10px 12px;
+
+    background: rgba(248, 250, 252, 0.97);
     border-bottom: 1px solid #e2e8f0;
+
+    box-shadow:
+        0 4px 14px
+        rgba(15, 23, 42, 0.08);
+
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .print-return-btn {
-    border: 0;
+    min-height: 38px;
+
+    padding: 8px 13px;
+
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
-    padding: 9px 16px;
 
-    background: #334155;
-    color: #ffffff;
+    background: #ffffff;
+    color: #334155;
 
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    box-shadow:
+        0 2px 8px
+        rgba(15, 23, 42, 0.08);
+
+    cursor: pointer;
+    touch-action: manipulation;
 }
 
+.print-return-btn:active {
+    background: #f1f5f9;
+    transform: scale(0.97);
+}
+
+
+/* =========================================================
+   手機／一般螢幕顯示：
+   臨時列印頁改成自動符合螢幕寬度
+   不影響正式 PDF
+========================================================= */
+
+@media screen {
+
+    html,
+    body {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+
+        margin: 0 !important;
+
+        overflow-x: hidden !important;
+
+        background: #eef2f7 !important;
+    }
+
+    body {
+        padding:
+            calc(62px + env(safe-area-inset-top))
+            8px
+            12px
+            8px !important;
+    }
+
+    .print-return-bar {
+        position: fixed;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        z-index: 9999;
+
+        padding-top:
+            calc(10px + env(safe-area-inset-top));
+    }
+
+    .inspection-document {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+
+        min-height: auto !important;
+
+        margin: 0 auto !important;
+    }
+}
+
+
+/* 正式列印／PDF 時完全隱藏返回工具列 */
+
 @media print {
+
     .print-return-bar {
         display: none !important;
     }
+
 }
 
 @media print {
@@ -27143,15 +27238,27 @@ strong,
 
 <body>
 
-    <div class="print-return-bar">
-        <button
-            type="button"
-            class="print-return-btn"
-            onclick="window.close()"
-        >
-            ← 返回系統
-        </button>
-    </div>
+<div class="print-return-bar">
+
+    <button
+        type="button"
+        class="print-return-btn"
+        onclick="
+            if (
+                window.opener &&
+                !window.opener.closed
+            ) {
+                window.opener.focus();
+            }
+
+            window.close();
+        "
+    >
+        <span aria-hidden="true">←</span>
+        <span>返回系統</span>
+    </button>
+
+</div>
 
     <article class="inspection-document">
                 ${documentElement.innerHTML}
