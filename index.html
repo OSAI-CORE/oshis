@@ -3553,8 +3553,8 @@ h2 {
 @media print {
 
     body.oshis-mobile-report-print #preview-img {
-        height: 175mm !important;
-        max-height: 175mm !important;
+        height: 145mm !important;
+        max-height: 145mm !important;
         width: auto !important;
         max-width: 100% !important;
         object-fit: contain !important;
@@ -5325,15 +5325,17 @@ and (max-width: 950px) {
                 id="header-action-buttons"
                 class="flex items-center space-x-4"
                 >
-                <button id="admin-login-btn" class="user-only text-xl hover:text-yellow-400 transition-colors px-2">
-                    <i class="fas fa-lock"></i>
-                </button>
-                <button id="logout-btn" class="admin-only editor-visible text-xl hover:text-green-400 transition-colors px-2">
-                    <i class="fas fa-lock-open"></i>
-                </button>
+<button id="admin-login-btn" class="user-only text-xl hover:text-yellow-400 transition-colors px-2">
+    <i class="fas fa-lock"></i>
+</button>
+
 <button id="permission-settings-btn" class="admin-only text-xl hover:text-yellow-300 transition-colors px-2" title="權限與密碼設定">
     <i class="fas fa-gear"></i>
-</button>                
+</button>
+
+<button id="logout-btn" class="admin-only editor-visible text-xl hover:text-green-400 transition-colors px-2">
+    <i class="fas fa-lock-open"></i>
+</button>              
             </div>
         </div>
     </nav>
