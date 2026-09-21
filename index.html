@@ -3265,7 +3265,7 @@ and (orientation: portrait) {
 }
 
 /* 第一欄：上傳現場照片、選擇報告分類、報告名稱，固定留在第一頁 */
-.grid > div:first-child {
+main > .grid > div:first-child {
     display: block !important;
     page-break-after: always !important;
     break-after: page !important;
@@ -3541,6 +3541,33 @@ h2 {
     line-height: 1.35 !important;
     white-space: normal !important;
 }
+
+}
+
+/* =========================================================
+   手機版危害識別報告列印
+   僅縮小第一頁現場照片高度，
+   讓照片、報告分類、報告名稱維持同一頁。
+========================================================= */
+
+@media print {
+
+    body.oshis-mobile-report-print #preview-img {
+        height: 175mm !important;
+        max-height: 175mm !important;
+        width: auto !important;
+        max-width: 100% !important;
+        object-fit: contain !important;
+    }
+
+    body.oshis-mobile-report-print
+    main > .grid > div:first-child {
+        page-break-after: always !important;
+        break-after: page !important;
+
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
 
 }
 
@@ -31795,74 +31822,206 @@ closeModals();
         };
 
 elements.printReportBtn.onclick = () => {
+
     selectedHazardIndex = -1;
+
     renderHazards();
     drawHazardsOnImage();
 
     renderPrintSuggestions();
 
-    const reportTitle = getReportTitle();
+
+    const reportTitle =
+        getReportTitle();
 
     if (elements.reportNameInput) {
-        elements.reportNameInput.value = reportTitle;
+        elements.reportNameInput.value =
+            reportTitle;
     }
+
 
     elements.printDate.innerText =
         `報告生成時間：${new Date().toLocaleString('zh-TW')} | 分類：${elements.categorySelect.value}`;
 
-const originalSrc =
-    elements.previewImg.src;
 
-let annotatedSrc = '';
+    /*
+     * 保留原始照片來源。
+     * 列印結束後再恢復。
+     */
+    const originalSrc =
+        elements.previewImg.src;
 
-try {
 
-    annotatedSrc =
-        createAnnotatedImageForPrint();
+    /*
+     * 判斷目前是否為手機／觸控裝置。
+     *
+     * 僅用來控制「列印版第一頁照片高度」，
+     * 不影響一般畫面。
+     */
+    const isMobileReportPrint =
+        window.matchMedia(
+            "(max-width: 768px)"
+        ).matches ||
+        window.matchMedia(
+            "(hover: none) and (pointer: coarse)"
+        ).matches;
 
-} catch (error) {
 
-    console.error(
-        '建立列印用危害標註圖片失敗：',
-        error
-    );
+    let annotatedSrc = "";
 
-    showToast(
-        '列印圖片處理失敗，請重新開啟報告後再試。',
-        'error'
-    );
 
-    return;
-}
+    try {
 
-if (!annotatedSrc) {
+        /*
+         * 將原始照片與危害紅框、
+         * #1、#2... 編號合成為單一 PNG。
+         */
+        annotatedSrc =
+            createAnnotatedImageForPrint();
 
-    showToast(
-        '報告圖片仍在載入中，請稍後再按列印。',
-        'error'
-    );
+    } catch (error) {
 
-    return;
-}
+        console.error(
+            "建立列印用危害標註圖片失敗：",
+            error
+        );
 
-    const img = new Image();
+        showToast(
+            "列印圖片處理失敗，請重新開啟報告後再試。",
+            "error"
+        );
 
-    img.onload = () => {
-        elements.previewImg.src = annotatedSrc;
-        elements.canvas.style.display = "none";
+        return;
+    }
+
+
+    if (!annotatedSrc) {
+
+        showToast(
+            "報告圖片仍在載入中，請稍後再按列印。",
+            "error"
+        );
+
+        return;
+    }
+
+
+    /*
+     * 列印完成後恢復一般畫面。
+     *
+     * 不再使用原本固定 300ms，
+     * 避免手機尚未完成 PDF 擷取，
+     * 照片就被提前換回無紅框版本。
+     */
+    let printViewRestored =
+        false;
+
+
+    const restorePrintView = () => {
+
+        if (printViewRestored) {
+            return;
+        }
+
+        printViewRestored =
+            true;
+
+
+        window.removeEventListener(
+            "afterprint",
+            restorePrintView
+        );
+
+
+        document.body.classList.remove(
+            "oshis-mobile-report-print"
+        );
+
+
+        elements.previewImg.src =
+            originalSrc;
+
+
+        elements.canvas.style.display =
+            "block";
+
 
         requestAnimationFrame(() => {
-            window.print();
 
-            setTimeout(() => {
-                elements.previewImg.src = originalSrc;
-                elements.canvas.style.display = "block";
-                drawHazardsOnImage();
-            }, 300);
+            drawHazardsOnImage();
+
         });
+
     };
 
-    img.src = annotatedSrc;
+
+    /*
+     * 手機列印時，
+     * 套用第一頁專用照片高度。
+     */
+    if (isMobileReportPrint) {
+
+        document.body.classList.add(
+            "oshis-mobile-report-print"
+        );
+
+    } else {
+
+        document.body.classList.remove(
+            "oshis-mobile-report-print"
+        );
+
+    }
+
+
+    /*
+     * 等待真正的「含紅框圖片」載入完成後，
+     * 才呼叫系統列印。
+     */
+    const handleAnnotatedImageReady = () => {
+
+        elements.canvas.style.display =
+            "none";
+
+
+        window.addEventListener(
+            "afterprint",
+            restorePrintView,
+            { once: true }
+        );
+
+
+        /*
+         * 連續兩次 requestAnimationFrame，
+         * 確保瀏覽器已完成圖片重新繪製，
+         * 再進入列印／PDF 預覽。
+         */
+        requestAnimationFrame(() => {
+
+            requestAnimationFrame(() => {
+
+                window.print();
+
+            });
+
+        });
+
+    };
+
+
+    elements.previewImg.addEventListener(
+        "load",
+        handleAnnotatedImageReady,
+        { once: true }
+    );
+
+
+    /*
+     * 最後才把畫面上的照片替換成
+     * 已經烙入危害紅框的 PNG。
+     */
+    elements.previewImg.src =
+        annotatedSrc;
 };
 
         elements.analyzeBtn.onclick = analyzeImage;
