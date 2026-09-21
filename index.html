@@ -1450,6 +1450,61 @@ nav p {
         border-color: #a8cdb3 !important;
     }
 
+/* =========================================================
+   危害／改善建議圖卡選取狀態
+========================================================= */
+
+/* 識別結果：藍色選取 */
+#analysis-output > .hazard-card.hazard-selected {
+    border-color: #2563eb !important;
+    border-left-color: #2563eb !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #eff6ff 0%,
+            #ffffff 100%
+        ) !important;
+
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.16),
+        0 12px 26px rgba(37, 99, 235, 0.12)
+        !important;
+}
+
+
+/* 改善建議圖卡可以點擊 */
+#suggestions-output > .suggestion-card {
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+
+/* 改善建議：綠色選取 */
+#suggestions-output > .suggestion-card.suggestion-selected {
+    background: #f0fdf4 !important;
+    border-color: #16a34a !important;
+
+    box-shadow:
+        0 0 0 3px rgba(22, 163, 74, 0.14),
+        0 12px 26px rgba(22, 163, 74, 0.10)
+        !important;
+}
+
+
+/* 選取改善建議時，
+   適用危害的小標籤也稍微轉為綠色系 */
+#suggestions-output
+> .suggestion-card.suggestion-selected
+.bg-slate-100 {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}    
+
     #save-report-btn {
         background: #15803d !important;
     }
@@ -9050,7 +9105,17 @@ let editingSuggestionIndex = -1;
 let base64Image = "";
 let lastAnalyzeTime = 0;
 let currentReportId = null;
+
 let selectedHazardIndex = -1;
+
+/*
+ * 改善建議圖卡選取狀態。
+ * suggestionHighlightHazardIndexes
+ * 可同時保存多個對應危害索引。
+ */
+let selectedSuggestionIndex = -1;
+let suggestionHighlightHazardIndexes = [];
+
 let annotationMode = null; // null / "manual" / "edit-box"
 let pendingManualBox = null;
 let previewReports = null;
@@ -24238,6 +24303,8 @@ function clearCurrentHazardWorkspace() {
 
     currentReportId = null;
     selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 
     editingHazardIndex = -1;
     editingSuggestionIndex = -1;
@@ -25720,6 +25787,147 @@ async () => {
         "權限與密碼設定已更新成功！"
     );
 };
+
+/* =========================================================
+   Hazard ID 安全產生器
+
+   規則：
+   1. 不使用 hazards.length + 1。
+   2. 掃描目前所有 Hazard ID。
+   3. 同時保留改善建議仍引用中的 Hazard ID。
+   4. 從目前最大 H 編號往後產生。
+   5. 不與任何既有／保留 ID 重複。
+========================================================= */
+function getNextHazardId() {
+
+    const reservedIds =
+        new Set();
+
+
+    /*
+     * 目前仍存在的危害 ID。
+     */
+    (
+        currentReportData?.hazards ||
+        []
+    ).forEach(
+        hazard => {
+
+            const id =
+                String(
+                    hazard?.id ||
+                    ""
+                ).trim();
+
+            if (id) {
+                reservedIds.add(id);
+            }
+
+        }
+    );
+
+
+    /*
+     * 改善建議仍引用中的 Hazard ID
+     * 也視為保留，
+     * 避免極端情況下重新使用舊 ID。
+     */
+    (
+        currentReportData?.suggestions ||
+        []
+    ).forEach(
+        suggestion => {
+
+            if (
+                !Array.isArray(
+                    suggestion?.hazardIds
+                )
+            ) {
+                return;
+            }
+
+            suggestion.hazardIds
+                .forEach(
+                    id => {
+
+                        const normalizedId =
+                            String(
+                                id ||
+                                ""
+                            ).trim();
+
+                        if (normalizedId) {
+                            reservedIds.add(
+                                normalizedId
+                            );
+                        }
+
+                    }
+                );
+
+        }
+    );
+
+
+    let maxNumber = 0;
+
+
+    reservedIds.forEach(
+        id => {
+
+            const match =
+                /^H(\d+)$/i.exec(id);
+
+            if (!match) {
+                return;
+            }
+
+            const number =
+                Number(match[1]);
+
+            if (
+                Number.isSafeInteger(
+                    number
+                )
+            ) {
+                maxNumber =
+                    Math.max(
+                        maxNumber,
+                        number
+                    );
+            }
+
+        }
+    );
+
+
+    let nextNumber =
+        maxNumber + 1;
+
+    let candidate = "";
+
+
+    do {
+
+        candidate =
+            `H${String(
+                nextNumber
+            ).padStart(
+                3,
+                "0"
+            )}`;
+
+        nextNumber += 1;
+
+    } while (
+        reservedIds.has(
+            candidate
+        )
+    );
+
+
+    return candidate;
+}
 
 function normalizeHazardData() {
     if (!currentReportData) {
@@ -27850,6 +28058,8 @@ inspectionDraftDirty =
     false;
 
         selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
         editingHazardIndex = -1;
         editingSuggestionIndex = -1;
 
@@ -27977,6 +28187,14 @@ if (!canUseAI()) {
 
 currentReportData =
     JSON.parse(text);
+
+/*
+ * AI 已產生全新的識別內容，
+ * 舊圖卡與紅框選取狀態不得沿用。
+ */
+selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 
 normalizeHazardData();
 
@@ -30858,6 +31076,14 @@ if (report) {
             )
     };
 
+/*
+ * 已切換為另一份正式報告，
+ * 不沿用上一份報告的圖卡選取狀態。
+ */
+selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];    
+
     /*
      * 剛載入正式歷史報告，
      * 尚未產生新的人工修改。
@@ -30930,9 +31156,15 @@ if (!canEditData()) {
 
     annotationMode = "manual";
     pendingManualBox = null;
-    selectedHazardIndex = -1;
+selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 
-    elements.canvasContainer.classList.add("annotation-active");
+renderHazards();
+renderSuggestions();
+drawHazardsOnImage();
+
+elements.canvasContainer.classList.add("annotation-active");
 
     alert("請在照片上拖曳框選要新增的危害位置。");
 }
@@ -30948,9 +31180,17 @@ if (!canEditData()) {
         return;
     }
 
-    selectedHazardIndex = idx;
-    annotationMode = "edit-box";
-    pendingManualBox = null;
+selectedHazardIndex = idx;
+
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
+
+renderHazards();
+renderSuggestions();
+drawHazardsOnImage();
+
+annotationMode = "edit-box";
+pendingManualBox = null;
 
     elements.canvasContainer.classList.add("annotation-active");
 
@@ -31036,28 +31276,64 @@ function getHazardIndexAtPoint(point) {
 }
 
 function selectHazardFromCanvas(event) {
-    if (annotationMode === "manual" || annotationMode === "edit-box") return;
+    if (
+        annotationMode === "manual" ||
+        annotationMode === "edit-box"
+    ) {
+        return;
+    }
 
-    const point = getCanvasPoint(event);
-    const idx = getHazardIndexAtPoint(point);
+    const point =
+        getCanvasPoint(event);
 
+    const idx =
+        getHazardIndexAtPoint(point);
+
+
+    /*
+     * 點到照片空白處：
+     * 清除所有圖卡與危害框選取。
+     */
     if (idx === -1) {
-    selectedHazardIndex = -1;
-    renderHazards();
-    drawHazardsOnImage();
-    return;
-}
 
+        selectedHazardIndex = -1;
+        selectedSuggestionIndex = -1;
+        suggestionHighlightHazardIndexes = [];
+
+        renderHazards();
+        renderSuggestions();
+        drawHazardsOnImage();
+
+        return;
+    }
+
+
+    /*
+     * 點到危害框：
+     * 切回單一危害選取模式。
+     */
     selectedHazardIndex = idx;
+    selectedSuggestionIndex = -1;
+    suggestionHighlightHazardIndexes = [];
+
     renderHazards();
+    renderSuggestions();
     drawHazardsOnImage();
 
-    const cards = elements.analysisOutput.querySelectorAll('.hazard-card');
+
+    const cards =
+        elements.analysisOutput
+            .querySelectorAll(
+                '.hazard-card'
+            );
+
     if (cards[idx]) {
+
         cards[idx].scrollIntoView({
             behavior: "smooth",
             block: "center"
         });
+
     }
 }
 
@@ -31089,9 +31365,14 @@ const displayHeight = img.offsetHeight;
         const width = ((xmax - xmin) / 1000) * displayWidth;
         const height = ((ymax - ymin) / 1000) * displayHeight;
 
-const isSelected = selectedHazardIndex === index;
+const isSelected =
+    selectedHazardIndex === index ||
+    suggestionHighlightHazardIndexes.includes(index);
 
-ctx.strokeStyle = isSelected ? '#2563eb' : '#ef4444';
+ctx.strokeStyle =
+    isSelected
+        ? '#2563eb'
+        : '#ef4444';
 ctx.lineWidth = isSelected ? 4 : 3;
 ctx.strokeRect(left, top, width, height);
 
@@ -31160,8 +31441,16 @@ function createAnnotatedImageForPrint() {
 card.onclick = (event) => {
     if (event.target.closest('button')) return;
 
+    /*
+     * 切回識別結果模式：
+     * 清除改善建議選取狀態。
+     */
     selectedHazardIndex = i;
+    selectedSuggestionIndex = -1;
+    suggestionHighlightHazardIndexes = [];
+
     renderHazards();
+    renderSuggestions();
     drawHazardsOnImage();
 
     card.scrollIntoView({
@@ -31258,10 +31547,109 @@ function renderSuggestions() {
     elements.suggestionsOutput.innerHTML = '';
     if (currentReportData.suggestions?.length > 0) {
         elements.suggestionsContainer.classList.remove('hidden');
-        currentReportData.suggestions.forEach((s, i) => {
-            const item = document.createElement('div');
-            item.className = "flex items-start justify-between space-x-2 text-sm text-slate-700 py-2 border-b border-slate-50 last:border-0 group";
-            item.innerHTML = `
+currentReportData.suggestions.forEach((s, i) => {
+
+    const item =
+        document.createElement(
+            'div'
+        );
+
+
+    item.className = `
+        suggestion-card
+        flex
+        items-start
+        justify-between
+        space-x-2
+        text-sm
+        text-slate-700
+        py-2
+        border-b
+        border-slate-50
+        last:border-0
+        group
+        ${selectedSuggestionIndex === i
+            ? 'suggestion-selected'
+            : ''}
+    `;
+
+
+    /*
+     * 點擊改善建議：
+     * 依 hazardIds 找出所有適用危害，
+     * 並讓照片上的對應紅框一起反藍。
+     */
+item.onclick = (event) => {
+
+    /*
+     * 人工新增／修正紅框期間，
+     * 不接受改善建議圖卡切換，
+     * 避免干擾目前正在框選的危害。
+     */
+    if (
+        annotationMode === "manual" ||
+        annotationMode === "edit-box"
+    ) {
+        return;
+    }
+
+    /*
+     * 點鉛筆或刪除按鈕時，
+     * 不觸發圖卡選取。
+     */
+        if (
+            event.target.closest(
+                'button'
+            )
+        ) {
+            return;
+        }
+
+
+        const linkedHazardIndexes =
+            Array.isArray(
+                s.hazardIds
+            )
+                ? s.hazardIds
+                    .map(id =>
+                        currentReportData.hazards
+                            .findIndex(
+                                h =>
+                                    h.id === id &&
+                                    h.enabled !== false
+                            )
+                    )
+                    .filter(
+                        idx =>
+                            idx >= 0
+                    )
+                : [];
+
+
+        /*
+         * 改善建議模式：
+         * 不使用單一 selectedHazardIndex。
+         */
+        selectedHazardIndex = -1;
+
+        selectedSuggestionIndex =
+            i;
+
+        suggestionHighlightHazardIndexes =
+            [
+                ...new Set(
+                    linkedHazardIndexes
+                )
+            ];
+
+
+        renderHazards();
+        renderSuggestions();
+        drawHazardsOnImage();
+    };
+
+
+    item.innerHTML = `
 <div class="flex items-start space-x-2 flex-1 min-w-0">
     <i class="fas fa-check text-green-500 mt-1"></i>
 
@@ -31386,14 +31774,76 @@ window.editHazard = (idx) => {
 if (!canDeleteData()) return alert("此功能僅限管理者使用。");            
             if (confirm("確定刪除此危害項目？")) {
                 pushUndoState();
+/*
+ * 先記住即將刪除的 Hazard ID。
+ * 改善建議使用 Hazard ID 建立關聯，
+ * 所以危害刪除時必須同步清除關聯。
+ */
+const deletedHazardId =
+    currentReportData.hazards[
+        idx
+    ]?.id ||
+    null;
+
+
 currentReportData.hazards.splice(
     idx,
     1
 );
 
+
+/*
+ * 同步移除所有改善建議中
+ * 對已刪除危害的關聯。
+ *
+ * 改善建議本身保留，
+ * 只移除該 Hazard ID。
+ */
+if (deletedHazardId) {
+
+    (
+        currentReportData
+            .suggestions ||
+        []
+    ).forEach(
+        suggestion => {
+
+            if (
+                !Array.isArray(
+                    suggestion?.hazardIds
+                )
+            ) {
+                return;
+            }
+
+            suggestion.hazardIds =
+                suggestion.hazardIds
+                    .filter(
+                        id =>
+                            id !==
+                            deletedHazardId
+                    );
+
+        }
+    );
+
+}
+
+
+/*
+ * 危害陣列索引已改變，
+ * 不可沿用原本的單選／多選索引。
+ */
+selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
+
 markHazardWorkspaceDirty();
 
-renderHazards(); drawHazardsOnImage(); updateUIVisibility();
+renderHazards();
+renderSuggestions();
+drawHazardsOnImage();
+updateUIVisibility();
             }
         };
 
@@ -31411,8 +31861,13 @@ document.getElementById('save-hazard-btn').onclick = () => {
 const oldHazard = editingHazardIndex === -1 ? null : currentReportData.hazards[editingHazardIndex];
 
 const h = {
-    id: oldHazard?.id || `H${String(currentReportData.hazards.length + 1).padStart(3, "0")}`,
-    source: oldHazard?.source || "manual",
+    id:
+        oldHazard?.id ||
+        getNextHazardId(),
+
+    source:
+        oldHazard?.source ||
+        "manual",
     enabled: oldHazard?.enabled !== false,
     type: document.getElementById('edit-h-type').value,
     legal_basis: document.getElementById('edit-h-law').value,
@@ -31792,7 +32247,15 @@ document.getElementById('undo-photo-action').onclick = () => {
     base64Image = previous.base64Image;
     currentReportData = previous.currentReportData;
     currentReportId = previous.currentReportId;
-    selectedHazardIndex = previous.selectedHazardIndex;
+    selectedHazardIndex =
+    previous.selectedHazardIndex;
+
+/*
+ * 改善建議反白屬於暫時 UI 狀態，
+ * Undo 後不沿用。
+ */
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 
     hazardWorkspaceDirty =
     !!previous.hazardWorkspaceDirty;
@@ -31885,6 +32348,8 @@ currentReportData = {
 };
 
 selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 annotationMode = null;
 pendingManualBox = null;
 
@@ -31978,9 +32443,14 @@ currentReportData.suggestions.splice(
     1
 );
 
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
+
 markHazardWorkspaceDirty();
 
+renderHazards();
 renderSuggestions();
+drawHazardsOnImage();
             }
         };
 
@@ -32025,18 +32495,31 @@ if (editingSuggestionIndex === -1) {
 
 markHazardWorkspaceDirty();
 
+/*
+ * 改善建議內容或適用危害已改變，
+ * 清除舊的建議選取與多框反白。
+ */
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
+
+renderHazards();
 renderSuggestions();
+drawHazardsOnImage();
+
 closeModals();
         };
 
 elements.printReportBtn.onclick = () => {
 
     selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
 
-    renderHazards();
-    drawHazardsOnImage();
+renderHazards();
+renderSuggestions();
+drawHazardsOnImage();
 
-    renderPrintSuggestions();
+renderPrintSuggestions();
 
 
     const reportTitle =
@@ -33146,20 +33629,74 @@ elements.canvas.addEventListener("click", (event) => {
     selectHazardFromCanvas(event);
 });
 
-document.addEventListener("click", (event) => {
-    if (annotationMode === "manual" || annotationMode === "edit-box") return;
-    if (selectedHazardIndex === -1) return;
+document.addEventListener(
+    "click",
+    (event) => {
 
-    const clickedHazardCard = event.target.closest(".hazard-card");
-    const clickedCanvas = event.target.closest("#hazard-canvas");
-    const clickedActionButton = event.target.closest("button");
+        if (
+            annotationMode === "manual" ||
+            annotationMode === "edit-box"
+        ) {
+            return;
+        }
 
-    if (clickedHazardCard || clickedCanvas || clickedActionButton) return;
 
-    selectedHazardIndex = -1;
-    renderHazards();
-    drawHazardsOnImage();
-});
+        /*
+         * 沒有任何選取狀態時不處理。
+         */
+        if (
+            selectedHazardIndex === -1 &&
+            selectedSuggestionIndex === -1 &&
+            suggestionHighlightHazardIndexes.length === 0
+        ) {
+            return;
+        }
+
+
+        const clickedHazardCard =
+            event.target.closest(
+                ".hazard-card"
+            );
+
+        const clickedSuggestionCard =
+            event.target.closest(
+                ".suggestion-card"
+            );
+
+        const clickedCanvas =
+            event.target.closest(
+                "#hazard-canvas"
+            );
+
+        const clickedActionButton =
+            event.target.closest(
+                "button"
+            );
+
+
+        if (
+            clickedHazardCard ||
+            clickedSuggestionCard ||
+            clickedCanvas ||
+            clickedActionButton
+        ) {
+            return;
+        }
+
+
+        /*
+         * 點到其他空白區域：
+         * 清除所有選取狀態。
+         */
+        selectedHazardIndex = -1;
+        selectedSuggestionIndex = -1;
+        suggestionHighlightHazardIndexes = [];
+
+        renderHazards();
+        renderSuggestions();
+        drawHazardsOnImage();
+    }
+);
 
 elements.canvas.addEventListener("mousedown", (event) => {
     if (annotationMode !== "manual" && annotationMode !== "edit-box") return;
@@ -33212,6 +33749,8 @@ if (annotationMode === "edit-box" && selectedHazardIndex >= 0) {
 
     annotationMode = null;
     selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
     elements.canvasContainer.classList.remove("annotation-active");
 
     drawHazardsOnImage();
@@ -33298,6 +33837,8 @@ if (annotationMode === "edit-box" && selectedHazardIndex >= 0) {
 
         annotationMode = null;
         selectedHazardIndex = -1;
+selectedSuggestionIndex = -1;
+suggestionHighlightHazardIndexes = [];
         elements.canvasContainer.classList.remove("annotation-active");
 
         drawHazardsOnImage();
