@@ -4888,6 +4888,29 @@ and (orientation: portrait) {
 }
 
 /* =========================================================
+   手機版：開立／編輯缺失改善單
+   防止 Safari / WebKit 聚焦輸入框時自動放大
+========================================================= */
+
+@media screen and (max-width: 950px),
+       (hover: none) and (pointer: coarse) {
+
+    #inspection-create-modal input,
+    #inspection-create-modal select,
+    #inspection-create-modal textarea {
+
+        font-size: 16px !important;
+
+        -webkit-text-size-adjust: 100% !important;
+        text-size-adjust: 100% !important;
+    }
+
+    #inspection-create-modal textarea {
+        line-height: 1.45 !important;
+    }
+}
+
+/* =========================================================
    雲端中心輸入元件字級統一
 
    與雲端中心正式母版一致，
@@ -27063,24 +27086,74 @@ strong,
     font-weight: 900;
 }
 
-                @media print {
-                    html,
-                    body {
-                        width: 100%;
-                        height: auto;
-                    }
+.print-return-bar {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
 
-                    .inspection-document {
-                        width: 100%;
-                        min-height: auto;
-                        margin: 0;
-                    }
-                }
+.print-return-btn {
+    border: 0;
+    border-radius: 10px;
+    padding: 9px 16px;
+
+    background: #334155;
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+@media print {
+    .print-return-bar {
+        display: none !important;
+    }
+}
+
+@media print {
+    html,
+    body {
+        width: 190mm !important;
+        min-width: 190mm !important;
+        max-width: 190mm !important;
+        height: auto !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body {
+        overflow: visible !important;
+    }
+
+    .inspection-document {
+        width: 190mm !important;
+        min-width: 190mm !important;
+        max-width: 190mm !important;
+
+        min-height: auto !important;
+
+        margin: 0 !important;
+    }
+}
             </style>
         </head>
 
-        <body>
-            <article class="inspection-document">
+<body>
+
+    <div class="print-return-bar">
+        <button
+            type="button"
+            class="print-return-btn"
+            onclick="window.close()"
+        >
+            ← 返回系統
+        </button>
+    </div>
+
+    <article class="inspection-document">
                 ${documentElement.innerHTML}
             </article>
         </body>
@@ -27089,13 +27162,39 @@ strong,
 
     printWindow.document.close();
 
-    const executePrint = () => {
-        printWindow.focus();
+const executePrint = () => {
 
-        setTimeout(() => {
-            printWindow.print();
-        }, 250);
-    };
+    printWindow.focus();
+
+    /*
+     * 列印／PDF 視窗關閉後，
+     * 自動關閉這個臨時列印分頁，
+     * 回到原本 OSHIS 系統。
+     */
+    printWindow.addEventListener(
+        "afterprint",
+        () => {
+
+            try {
+                printWindow.close();
+            } catch (error) {
+                console.warn(
+                    "列印完成後無法自動關閉臨時列印頁：",
+                    error
+                );
+            }
+
+        },
+        { once: true }
+    );
+
+
+    setTimeout(() => {
+
+        printWindow.print();
+
+    }, 250);
+};
 
     if (printWindow.document.readyState === "complete") {
         executePrint();
