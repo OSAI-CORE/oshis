@@ -26351,7 +26351,7 @@ async function findInspectionBySourceReportId(
 async function openInspectionCreateModal() {
 if (!canEditData()) {
     return showToast(
-        "請先登入使用者或管理者權限，才能開立改善單。",
+        "請先登入權限，才能開立改善單。",
         "error"
     );
 }
@@ -27030,7 +27030,7 @@ ${escapeInspectionHtml(
 async function saveInspectionReport() {
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能儲存改善單。",
+            "請先登入權限，才能儲存改善單。",
             "error"
         );
         return;
@@ -27892,7 +27892,7 @@ document.getElementById(
 
     if (!canEditData()) {
         return showToast(
-            "請先登入使用者或管理者權限，才能管理分類。",
+            "請先登入權限，才能管理分類。",
             "error"
         );
     }
@@ -27911,7 +27911,7 @@ document.getElementById(
 
     if (!canEditData()) {
         return showToast(
-            "請先登入使用者或管理者權限，才能新增分類。",
+            "請先登入權限，才能新增分類。",
             "error"
         );
     }
@@ -27965,7 +27965,7 @@ async (id, oldName) => {
 
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能編輯分類。",
+            "請先登入權限，才能編輯分類。",
             "error"
         );
         return;
@@ -28044,7 +28044,7 @@ await refreshCategories();
 if (!canUploadImage()) {
     event.preventDefault();
     event.stopPropagation();
-    showToast("請先登入使用者或管理者權限，才能上傳現場照片。", "error");
+    showToast("請先登入權限，才能上傳現場照片。", "error");
     return;
 }
 
@@ -28064,7 +28064,7 @@ document.getElementById(
 
     if (!canUploadImage()) {
         showToast(
-            "請先登入使用者或管理者權限，才能重新選擇圖片。",
+            "請先登入權限，才能重新選擇圖片。",
             "error"
         );
         return;
@@ -28085,7 +28085,7 @@ document.getElementById(
             elements.dropZone.classList.remove('active');
 
 if (!canUploadImage()) {
-    showToast("請先登入使用者或管理者權限，才能拖曳上傳現場照片。", "error");
+    showToast("請先登入權限，才能拖曳上傳現場照片。", "error");
     return;
 }
 
@@ -28258,7 +28258,7 @@ suggestionHighlightHazardIndexes = [];
 
 async function analyzeImage() {
 if (!canUseAI()) {
-    showToast("請先登入使用者或管理者權限，才能啟動 AI 危害識別。", "error");
+    showToast("請先登入權限，才能啟動 AI 危害識別。", "error");
     return;
 }    
     const now = Date.now();
@@ -28346,7 +28346,7 @@ elements.saveReportBtn.onclick =
 async () => {
     if (!canEditData()) {
         return alert(
-            "請先登入使用者或管理者模式，才能執行儲存報告功能。"
+            "請先登入權限，才能執行儲存報告功能。"
         );
     }
 
@@ -28681,7 +28681,7 @@ function updateInspectionCompletionUI() {
 async function toggleInspectionCompletionStatus() {
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能更新改善狀態。",
+            "請先登入權限，才能更新改善狀態。",
             "error"
         );
         return;
@@ -29254,7 +29254,7 @@ async function renderInspectionAttachmentList() {
 async function uploadInspectionAttachment() {
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能上傳改善回覆。",
+            "請先登入權限，才能上傳改善回覆。",
             "error"
         );
         return;
@@ -31039,7 +31039,7 @@ window.editHistoryTitle =
 async id => {
     if (!canEditData()) {
         return alert(
-            "請先登入使用者或管理者模式。"
+            "請先登入權限。"
         );
     }
 
@@ -31268,7 +31268,7 @@ closeModals();
 
 function startManualAnnotation() {
 if (!canEditData()) {
-    alert("請先登入使用者或管理者模式，才能新增人工紅框。");
+    alert("請先登入權限，才能新增人工紅框。");
         return;
     }
 
@@ -31294,7 +31294,7 @@ elements.canvasContainer.classList.add("annotation-active");
 
 function startEditHazardBox(idx) {
 if (!canEditData()) {
-    alert("請先登入使用者或管理者模式，才能修正紅框。");
+    alert("請先登入權限，才能修正紅框。");
         return;
     }
 
@@ -31881,7 +31881,7 @@ window.editHazard = (idx) => {
 
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能編輯危害項目。",
+            "請先登入權限，才能編輯危害項目。",
             "error"
         );
         return;
@@ -31977,7 +31977,7 @@ document.getElementById('save-hazard-btn').onclick = () => {
 
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能儲存危害項目。",
+            "請先登入權限，才能儲存危害項目。",
             "error"
         );
         return;
@@ -32361,7 +32361,7 @@ document.getElementById(
 
 document.getElementById('undo-photo-action').onclick = () => {
     if (!canEditData()) {
-        return showToast("請先登入使用者或管理者權限，才能返回上一步。", "error");
+        return showToast("請先登入權限，才能返回上一步。", "error");
     }
 
     const previous = hazardUndoStack.pop();
@@ -32515,7 +32515,7 @@ document.getElementById(
 ).onclick = () => {
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能新增改善建議。",
+            "請先登入權限，才能新增改善建議。",
             "error"
         );
         return;
@@ -32545,7 +32545,7 @@ window.editSuggestion = (idx) => {
 
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能編輯改善建議。",
+            "請先登入權限，才能編輯改善建議。",
             "error"
         );
         return;
@@ -32584,7 +32584,7 @@ document.getElementById('save-suggestion-btn').onclick = () => {
 
     if (!canEditData()) {
         showToast(
-            "請先登入使用者或管理者權限，才能儲存改善建議。",
+            "請先登入權限，才能儲存改善建議。",
             "error"
         );
         return;
@@ -32946,7 +32946,7 @@ function openDataExportModal() {
     ) {
 
         showToast(
-            "請先登入使用者或管理者權限，才能匯出資料。",
+            "請先登入權限，才能匯出資料。",
             "error"
         );
 
@@ -33047,7 +33047,7 @@ async function exportPreviewData() {
 
 
         showToast(
-            "請先登入使用者或管理者權限，才能匯出資料。",
+            "請先登入權限，才能匯出資料。",
             "error"
         );
 
@@ -33287,7 +33287,7 @@ async function exportPreviewData() {
 async function exportFormalData() {
 if (!canExportData()) {
     showToast(
-        "請先登入使用者或管理者權限，才能匯出資料。",
+        "請先登入權限，才能匯出資料。",
         "error"
     );
     return;
