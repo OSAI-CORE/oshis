@@ -181,6 +181,23 @@
 }
 
 /* =========================================================
+   OSHIS｜開立改善單 Tooltip 狀態控制
+
+   停用：不顯示 Tooltip
+   啟用：恢復原本統一 Tooltip
+
+   不修改按鈕權限及啟用條件
+========================================================= */
+
+@media (hover: hover) and (pointer: fine) {
+
+    #create-inspection-btn:disabled.system-tooltip-btn::after {
+        display: none !important;
+    }
+
+}
+
+/* =========================================================
    資料匯出／載入／匯入按鈕
 
    外型、字體、圖示比例比照法規系統；
@@ -2725,6 +2742,80 @@ body.is-admin .suggestion-action-buttons {
     }
 }
 
+/* =========================================================
+   OSHIS｜附件專用列印
+   不影響識別報告及缺失改善單列印
+========================================================= */
+
+#file-preview-print-btn.hidden {
+    display: none !important;
+}
+
+#oshis-attachment-print-root {
+    display: none;
+}
+
+@media print {
+
+    body.oshis-attachment-print {
+        overflow: visible !important;
+    }
+
+    body.oshis-attachment-print
+    > :not(#oshis-attachment-print-root) {
+        display: none !important;
+    }
+
+    body.oshis-attachment-print
+    #oshis-attachment-print-root {
+        display: block !important;
+        position: static !important;
+
+        width: 100% !important;
+        height: auto !important;
+
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    body.oshis-attachment-print
+    .oshis-attachment-print-page {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+
+        width: 100% !important;
+        height: auto !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+    }
+
+    body.oshis-attachment-print
+    .oshis-attachment-print-page
+    + .oshis-attachment-print-page {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    body.oshis-attachment-print
+    .oshis-attachment-print-page img {
+        display: block !important;
+
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
+
+        object-fit: contain !important;
+
+        margin: 0 auto !important;
+        box-shadow: none !important;
+    }
+}
+
 /* 手機 / 桌機共用：附件檔案預覽視窗 */
 .file-preview-modal {
     position: fixed;
@@ -3088,6 +3179,20 @@ body.is-admin .suggestion-action-buttons {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* =========================================================
+   OSHIS｜附件預覽置中縮放及完整捲動範圍
+
+   PDF 與 JPG／JPEG／PNG 共用。
+   小於視窗時維持置中；
+   大於視窗時讓舞台隨內容擴展。
+   不影響 PDF iframe 備援預覽。
+========================================================= */
+
+#file-preview-stage:has(> #pdf-preview-pages:not(.hidden)),
+#file-preview-stage:has(> #file-preview-image:not(.hidden)) {
+    width: max-content;
 }
 
 #file-preview-image {
@@ -5968,19 +6073,140 @@ and (orientation: portrait) {
 
 
 /* =========================================================
-   桌機版：編輯雲端預覽有效期限
+   OSHIS｜編輯雲端預覽有效期限統一
+
+   桌機：
+   - 日曆按鈕 30px
+   - Font Awesome 圖示 14px
+   - Tooltip 向上顯示
+
+   手機：
+   - 保留原本日曆圖示
+   - 保留 datetime-local 原生操作
+
+   不修改有效期限與雲端儲存邏輯。
 ========================================================= */
 
+/* 預設隱藏桌機自訂日曆按鈕 */
+.cloud-expiry-calendar-trigger {
+    display: none;
+}
+
+/* 桌機原有設定 */
 @media screen and (min-width: 951px) {
 
+    /* 隱藏手機專用日曆圖示 */
     #cloud-preview-edit-expiry-wrap
     > .fa-calendar-days {
         display: none !important;
     }
 
+    /* 不支援 showPicker 時維持原生操作 */
     #cloud-preview-edit-expiry {
         padding-right: 1rem !important;
         cursor: pointer;
+    }
+
+}
+
+/* 支援 showPicker 的桌機滑鼠環境 */
+@media screen and (min-width: 951px)
+and (hover: hover) and (pointer: fine) {
+
+    /* 允許 Tooltip 顯示於欄位外 */
+    #cloud-preview-edit-expiry-wrap.cloud-expiry-picker-supported {
+        overflow: visible !important;
+    }
+
+    /* 日期文字預留右側圖示空間 */
+    #cloud-preview-edit-expiry-wrap.cloud-expiry-picker-supported
+    #cloud-preview-edit-expiry {
+        padding-right: 44px !important;
+    }
+
+    /* 隱藏瀏覽器原生日曆圖示 */
+    #cloud-preview-edit-expiry-wrap.cloud-expiry-picker-supported
+    #cloud-preview-edit-expiry::-webkit-calendar-picker-indicator {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* 自訂日曆按鈕 */
+    #cloud-preview-edit-expiry-wrap.cloud-expiry-picker-supported
+    > .cloud-expiry-calendar-trigger {
+        position: absolute;
+
+        right: 6px;
+        top: 50%;
+
+        transform: translateY(-50%);
+
+        width: 30px;
+        height: 30px;
+
+        padding: 0;
+
+        border: 0;
+        border-radius: 6px;
+
+        background: #f8fafc;
+        color: #64748b;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    /* Font Awesome 日曆圖示 */
+    .cloud-expiry-calendar-trigger i {
+        font-size: 14px;
+        line-height: 1;
+        pointer-events: none;
+    }
+
+    /* 滑鼠移入變色 */
+    .cloud-expiry-calendar-trigger:hover {
+        color: #334155;
+    }
+
+    /* 日期欄位取得焦點 */
+    #cloud-preview-edit-expiry-wrap:focus-within
+    .cloud-expiry-calendar-trigger {
+        background: #ffffff;
+    }
+
+    /* 提高目前日期欄位層級 */
+    #cloud-preview-edit-expiry-wrap:hover {
+        z-index: 20;
+    }
+
+    /* Tooltip 向上顯示並靠右對齊 */
+    #cloud-preview-edit-expiry-wrap
+    .cloud-expiry-calendar-trigger.system-tooltip-btn::after {
+        left: auto;
+        right: 0;
+
+        top: auto;
+        bottom: calc(100% + 6px);
+
+        transform: translateY(2px);
+    }
+
+    #cloud-preview-edit-expiry-wrap
+    .cloud-expiry-calendar-trigger.system-tooltip-btn:hover::after {
+        transform: translateY(0);
+    }
+
+}
+
+/* 列印時隱藏自訂日曆按鈕 */
+@media print {
+
+    .cloud-expiry-calendar-trigger {
+        display: none !important;
     }
 
 }
@@ -6118,6 +6344,162 @@ and (max-width: 950px) {
         #ffffff !important;
 }
 
+/* =========================================================
+   OSHIS｜缺失改善單日期選擇器 Tooltip 統一
+
+   桌機：
+   - 保留原生 type="date"
+   - 自訂日曆圖示覆蓋原生圖示
+   - Tooltip 共用 system-tooltip-btn
+   - 提示顯示於圖示上方
+
+   手機及觸控裝置：
+   - 保留原生日期圖示
+   - 保留原生日期選擇操作
+   - 不顯示自訂 Tooltip
+========================================================= */
+
+#inspection-create-modal
+.inspection-date-picker-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+/* 預設不顯示自訂圖示 */
+#inspection-create-modal
+.inspection-calendar-trigger {
+    display: none;
+}
+
+
+/* 桌機滑鼠裝置 */
+@media (hover: hover) and (pointer: fine) {
+
+    /* 日期文字保留右側圖示空間 */
+    #inspection-create-modal
+    .inspection-date-picker-wrap
+    > input[type="date"] {
+        padding-right: 40px !important;
+    }
+
+    /* 隱藏瀏覽器原生圖示外觀 */
+    #inspection-create-modal
+    .inspection-date-picker-wrap
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* 自訂日曆圖示 */
+    #inspection-create-modal
+    .inspection-calendar-trigger {
+        position: absolute;
+
+        right: 6px;
+        top: 50%;
+
+        transform: translateY(-50%) !important;
+
+        width: 30px;
+        height: 30px;
+
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+
+        background: #f8fafc;
+        color: #64748b;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    /* 日曆圖示尺寸 */
+    #inspection-create-modal
+    .inspection-calendar-trigger i {
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    /* 滑鼠靠近 */
+    #inspection-create-modal
+    .inspection-calendar-trigger:hover {
+        color: #334155;
+
+        transform:
+            translateY(-50%) !important;
+    }
+
+    /* 日期欄位取得焦點時同步背景 */
+    #inspection-create-modal
+    .inspection-date-picker-wrap:focus-within
+    .inspection-calendar-trigger {
+        background: #ffffff;
+    }
+
+    /* 提高目前欄位層級 */
+    #inspection-create-modal
+    .inspection-date-picker-wrap:hover {
+        z-index: 20;
+    }
+
+    /* Tooltip 向上顯示，避免右側裁切 */
+    #inspection-create-modal
+    .inspection-calendar-trigger::after {
+        left: auto;
+        right: 0;
+
+        top: auto;
+        bottom: calc(100% + 6px);
+
+        transform: translateY(2px);
+    }
+
+    #inspection-create-modal
+    .inspection-calendar-trigger:hover::after {
+        transform: translateY(0);
+    }
+
+}
+
+/* =========================================================
+   OSHIS Cloud Center：跨系統統一圖卡與文字配色
+   只影響雲端中心，不修改危害識別與改善單介面。
+========================================================= */
+
+#cloud-workspace-list > [data-workspace-id].bg-sky-100 {
+    background-color: #EEE9E1;
+}
+
+#cloud-workspace-list > [data-workspace-id] p.text-slate-400 {
+    color: #475569;
+}
+
+#cloud-workspace-list > [data-workspace-id].bg-sky-100 .border-t {
+    border-top-color: #D6D3D1;
+}
+
+#cloud-preview-manage-list .font-mono.text-slate-400,
+#cloud-preview-manage-list .grid.grid-cols-2 > .bg-slate-50 > .text-slate-400 {
+    color: #64748B;
+}
+
+#cloud-preview-role-label.bg-amber-100 {
+    background-color: #F5E8E3;
+    color: #8A4B3F;
+    box-shadow: inset 0 0 0 1px #E8CEC5;
+}
+
+#cloud-preview-role-label.bg-emerald-100 {
+    background-color: #E4F0EB;
+    color: #2F6951;
+    box-shadow: inset 0 0 0 1px #C9DED3;
+}
+
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
@@ -6144,7 +6526,7 @@ and (max-width: 950px) {
     <i class="fas fa-lock"></i>
 </button>
 
-<button id="permission-settings-btn" class="admin-only text-xl hover:text-yellow-300 transition-colors px-2" title="權限與密碼設定">
+<button id="permission-settings-btn" class="admin-only text-xl hover:text-yellow-300 transition-colors px-2" aria-label="權限與密碼設定">
     <i class="fas fa-gear"></i>
 </button>
 
@@ -6518,7 +6900,17 @@ and (max-width: 950px) {
 
     <button type="button" class="file-preview-tool-btn" onclick="fitFilePreviewToScreen()">
         <i data-lucide="maximize" class="w-4 h-4"></i>
-        <span>適合畫面</span>
+        <span>適合</span>
+    </button>
+
+    <button id="file-preview-print-btn"
+            type="button"
+            class="file-preview-tool-btn hidden"
+            onclick="printPreviewAttachment()"
+            title="列印附件"
+            aria-label="列印附件">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span>列印</span>
     </button>
 </div>
 
@@ -7006,7 +7398,7 @@ class="hidden
                  flex items-center justify-center
                  shrink-0">
 
-<i class="fas fa-users text-indigo-600"></i>
+<i class="fas fa-user text-indigo-600"></i>
 
     </span>
 
@@ -7065,22 +7457,22 @@ class="hidden
     <button type="button"
             id="cloud-workspace-create-btn"
             onclick="createCloudWorkspaceFromCurrentData()"
-            class="w-full min-w-0
-                   h-10 sm:h-9
-                   px-2
-                   rounded-xl
-                   border border-emerald-200
-                   bg-emerald-600
-                   hover:bg-emerald-700
-                   text-white
-                   text-[11px] sm:text-xs
-                   font-black
-                   whitespace-nowrap
-                   flex items-center
-                   justify-center
-                   gap-1.5
-                   transition
-                   shadow-sm">
+class="w-full min-w-0
+       h-10 sm:h-9
+       px-2
+       rounded-xl
+       border-0
+       bg-emerald-600
+       hover:bg-emerald-700
+       text-white
+       text-[11px] sm:text-xs
+       font-black
+       whitespace-nowrap
+       flex items-center
+       justify-center
+       gap-1.5
+       transition-all
+       shadow-sm">
 
         <svg viewBox="0 0 24 24"
              fill="none"
@@ -8220,6 +8612,7 @@ class="hidden
                       outline-none
                       text-sm text-slate-700">
 
+        <!-- 手機版原有日曆圖示：完整保留 -->
         <i class="fa-solid fa-calendar-days
                   absolute
                   right-3 top-1/2
@@ -8228,6 +8621,19 @@ class="hidden
                   text-sm
                   pointer-events-none"
            aria-hidden="true"></i>
+
+        <!-- 桌機版：統一日曆按鈕與 Tooltip -->
+        <button
+            id="cloud-preview-edit-calendar-btn"
+            type="button"
+            class="cloud-expiry-calendar-trigger system-tooltip-btn"
+            data-tooltip="選擇有效期限"
+            aria-label="選擇有效期限"
+            onclick="openCloudPreviewExpiryPicker()"
+        >
+            <i class="fa-solid fa-calendar-days"
+               aria-hidden="true"></i>
+        </button>
 
     </div>
 
@@ -9121,18 +9527,32 @@ gap-1.5">
                 <label class="block text-xs font-bold text-slate-600 mb-1">
                     稽查日期
                 </label>
-<input
-    id="inspection-date"
-    type="date"
-    onclick="
-        if (typeof this.showPicker === 'function') {
-            try {
-                this.showPicker();
-            } catch (error) {}
-        }
-    "
-    class="w-full p-2.5 border rounded text-sm"
->
+<div class="inspection-date-picker-wrap">
+
+    <input
+        id="inspection-date"
+        type="date"
+        onclick="
+            if (typeof this.showPicker === 'function') {
+                try {
+                    this.showPicker();
+                } catch (error) {}
+            }
+        "
+        class="w-full p-2.5 border rounded text-sm"
+    >
+
+    <button
+        type="button"
+        class="inspection-calendar-trigger system-tooltip-btn"
+        data-tooltip="選擇稽查日期"
+        aria-label="選擇稽查日期"
+        onclick="openInspectionDatePicker('inspection-date')"
+    >
+        <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+    </button>
+
+</div>
             </div>
 
             <div>
@@ -9187,18 +9607,32 @@ gap-1.5">
                 <label class="block text-xs font-bold text-slate-600 mb-1">
                     改善期限
                 </label>
-<input
-    id="inspection-due-date"
-    type="date"
-    onclick="
-        if (typeof this.showPicker === 'function') {
-            try {
-                this.showPicker();
-            } catch (error) {}
-        }
-    "
-    class="w-full p-2.5 border rounded text-sm"
->
+<div class="inspection-date-picker-wrap">
+
+    <input
+        id="inspection-due-date"
+        type="date"
+        onclick="
+            if (typeof this.showPicker === 'function') {
+                try {
+                    this.showPicker();
+                } catch (error) {}
+            }
+        "
+        class="w-full p-2.5 border rounded text-sm"
+    >
+
+    <button
+        type="button"
+        class="inspection-calendar-trigger system-tooltip-btn"
+        data-tooltip="選擇改善期限"
+        aria-label="選擇改善期限"
+        onclick="openInspectionDatePicker('inspection-due-date')"
+    >
+        <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+    </button>
+
+</div>
             </div>
 
             <div>
@@ -9960,6 +10394,74 @@ let activeCloudWorkspaceId = '';
 let activeCloudWorkspaceName = '';
 let activeCloudWorkspaceRevision = 0;
 
+/* 僅鎖定建立／載入／儲存，避免三者互相覆蓋。 */
+let hazardCloudWorkspaceOperation = '';
+
+/*
+ * 儲存目標與目前資料來源分開管理。
+ * 選擇另一張圖卡，不會覆蓋目前 Session。
+ */
+let hazardWorkspaceSaveTarget = null;
+let hazardWorkspaceLastList = [];
+
+function hazardWorkspaceSelectedTarget() {
+
+    if (hazardWorkspaceSaveTarget?.id) {
+        return {
+            id: String(hazardWorkspaceSaveTarget.id),
+            name: String(
+                hazardWorkspaceSaveTarget.name ||
+                '雲端工作資料'
+            ),
+            revision:
+                Number(hazardWorkspaceSaveTarget.revision) || 0
+        };
+    }
+
+    return {
+        id: String(activeCloudWorkspaceId || ''),
+        name: String(activeCloudWorkspaceName || ''),
+        revision: Number(activeCloudWorkspaceRevision) || 0
+    };
+}
+
+/*
+ * 固定儲存開始時的資料內容。
+ * 排除每次執行都會不同的匯出時間。
+ */
+function hazardWorkspaceSessionSnapshot() {
+
+    const data = buildHazardIdentificationExportData();
+
+    delete data.exportedAt;
+    delete data.exportedBy;
+
+    /*
+     * 同時檢查正式 Session 與目前工作畫面。
+     *
+     * 避免雲端處理期間使用者修改照片、
+     * 危害項目或改善單草稿，
+     * 但因正式 Session 尚未更新，
+     * 被誤判為資料完全相同。
+     */
+    return JSON.stringify({
+        data,
+
+        currentReportId,
+        base64Image,
+        currentReportData,
+        currentInspectionDraft,
+
+        hazardWorkspaceDirty,
+        inspectionDraftDirty,
+
+        pendingAttachmentCount:
+            Array.isArray(pendingInspectionAttachmentFiles)
+                ? pendingInspectionAttachmentFiles.length
+                : 0
+    });
+}
+
 function updateActiveCloudWorkspaceUI() {
 
     const actions =
@@ -9983,9 +10485,11 @@ function updateActiveCloudWorkspaceUI() {
         );
 
 
+    const target = hazardWorkspaceSelectedTarget();
+
     const active =
-        !!activeCloudWorkspaceId &&
-        activeCloudWorkspaceRevision > 0;
+        !!target.id &&
+        target.revision > 0;
 
 
     /*
@@ -10028,14 +10532,14 @@ function updateActiveCloudWorkspaceUI() {
 
     if (name) {
         name.textContent =
-            activeCloudWorkspaceName ||
+            target.name ||
             '雲端工作資料';
     }
 
 
     if (revision) {
         revision.textContent =
-            `Revision ${activeCloudWorkspaceRevision}`;
+            `Revision ${target.revision}`;
     }
 
 
@@ -10043,6 +10547,8 @@ function updateActiveCloudWorkspaceUI() {
 }
 
 function clearActiveCloudWorkspace() {
+
+    hazardWorkspaceSaveTarget = null;
 
     activeCloudWorkspaceId =
         '';
@@ -11828,31 +12334,39 @@ function setCloudPreviewViewerBusy(
     }
 
     button.disabled =
-        busy;
+        !!busy;
 
-if (busy) {
-    /*
-     * 忙碌時保留原本按鈕顏色，
-     * 並維持雲端載入圖示。
-     */
-    button.classList.remove(
-        'opacity-60'
-    );
+    if (busy) {
 
-    button.classList.add(
-        'cursor-wait'
-    );
+        /*
+         * 保留原按鈕顏色，
+         * 顯示與績效、證照系統一致的
+         * Font Awesome 旋轉 Spinner。
+         */
+        button.classList.remove(
+            'opacity-60'
+        );
 
-    button.innerHTML = `
-        <i class="fas fa-cloud-arrow-down"
-           aria-hidden="true"></i>
+        button.classList.add(
+            'cursor-wait'
+        );
 
-        <span>
-            正在載入...
-        </span>
-    `;
+        button.innerHTML = `
+            <i class="
+                fas fa-spinner
+                fa-spin
+                text-[13px]
+                leading-none
+            "
+               aria-hidden="true"></i>
 
-} else {
+            <span>
+                載入中
+            </span>
+        `;
+
+    } else {
+
         button.classList.remove(
             'opacity-60',
             'cursor-wait'
@@ -11867,7 +12381,7 @@ if (busy) {
             </span>
         `;
     }
-}
+} 
 
 /*
  * 清除目前 Cloud Preview
@@ -11890,7 +12404,6 @@ function clearCloudPreviewRuntimeState() {
     activeCloudPreviewId =
         '';
 }
-
 
 /*
  * Cloud Preview 在開啟期間到期。
@@ -12021,6 +12534,19 @@ async function submitCloudPreviewViewerOpen() {
         getCurrentRole() !==
         'viewer'
     ) {
+        return;
+    }
+
+    /*
+     * 預覽正在載入時，
+     * 禁止點擊或按 Enter 重複送出。
+     */
+    const openButton =
+        document.getElementById(
+            'cloud-preview-view-open-btn'
+        );
+
+    if (openButton?.disabled) {
         return;
     }
 
@@ -12386,18 +12912,18 @@ const configs = {
         title:
             getCurrentRole() === 'admin'
                 ? '管理雲端預覽'
-                : '我的發布預覽',
+                : '我的雲端預覽',
 
         subtitle:
             getCurrentRole() === 'admin'
                 ? 'MANAGE PREVIEWS'
-                : 'MY PREVIEWS',
+                : 'MY CLOUD PREVIEWS',
 
         color: 'text-indigo-300'
     },
 
     accounts: {
-        icon: 'fa-users',
+        icon: 'fa-user',
         title: '管理發布帳號',
         subtitle: 'PUBLISHER ACCOUNTS',
         color: 'text-violet-300'
@@ -12860,13 +13386,13 @@ roleIcon.className =
 
         if (manageCardTitle) {
             manageCardTitle.textContent =
-                '我的發布預覽';
+                '我的雲端預覽';
         }
 
 
         if (manageCardSubtitle) {
             manageCardSubtitle.textContent =
-                'MY PREVIEWS';
+                'MY CLOUD PREVIEWS';
         }
 
 if (accountsCard) {
@@ -13294,19 +13820,21 @@ async function openCloudPreviewPublishView() {
     }
 
     /*
-     * 危害識別或改善單仍有未儲存內容時，
-     * 先阻止發布。
+     * 改善回覆附件仍停留在
+     * 已選取、尚未正式加入資料的狀態時，
+     * 不允許發布不完整的 Preview。
      */
     if (
-        hasUnsavedDraftChanges()
+        Array.isArray(pendingInspectionAttachmentFiles) &&
+        pendingInspectionAttachmentFiles.length > 0
     ) {
         showToast(
-            '請先儲存目前的危害識別修改後再發布。',
+            '請先完成改善回覆附件的上傳，或清除目前選取的檔案後再發布。',
             'error'
         );
 
         return;
-    }
+    }    
 
     /*
      * 第二層 Cloud Publisher 驗證。
@@ -15706,6 +16234,24 @@ function getCloudPreviewPublishErrorMessage(
         CLOUD_FILE_ID_MISSING:
             '附件雲端資料建立失敗。',
 
+                    PORTABLE_CLOUD_ATTACHMENT_UNAVAILABLE:
+            '原有雲端附件無法取得完整內容，請重新載入工作資料後再發布。',
+
+        PORTABLE_CLOUD_ATTACHMENT_FETCH_FAILED:
+            '原有雲端附件讀取失敗，請確認網路連線後重新發布。',
+
+        WORKSPACE_SIGNED_READ_FAILED:
+            '無法重新取得工作資料附件的讀取權限。',
+
+        WORKSPACE_SIGNED_READ_INVALID:
+            '工作資料附件讀取資訊不完整。',
+
+        WORKSPACE_FOREIGN_ATTACHMENT:
+            '預覽資料仍含有其他工作資料的附件參照，已取消發布。',
+
+        WORKSPACE_FILE_SIZE_INVALID:
+            '附件內容無效或超過 5MB 上限。',
+
         PREVIEW_UPDATE_FAILED:
             '雲端預覽資料更新失敗。',
 
@@ -15743,17 +16289,17 @@ async function submitCloudPreviewPublish() {
     }
 
     /*
-     * 危害識別報告或改善單
-     * 還有尚未儲存的草稿時阻止發布。
+     * 執行正式發布時再次檢查，
+     * 避免開啟設定視窗後又出現未完成附件。
      */
     if (
-        hasUnsavedDraftChanges()
+        Array.isArray(pendingInspectionAttachmentFiles) &&
+        pendingInspectionAttachmentFiles.length > 0
     ) {
         setCloudPreviewPublishStatus(
-            '請先儲存目前的危害識別修改後再發布。',
+            '請先完成改善回覆附件的上傳，或清除目前選取的檔案後再發布。',
             'error'
         );
-
         return;
     }
 
@@ -15884,24 +16430,47 @@ async function submitCloudPreviewPublish() {
         );
 
         /*
-         * 建立危害識別正式資料。
+         * 建立可以獨立發布的完整預覽資料。
+         *
+         * 若來源為 Cloud Workspace：
+         * 先把 Signed URL 還原為 DataURL。
+         *
+         * 不修改原本正式 Session。
          */
         const sourceData =
-            buildHazardIdentificationExportData();
+            await buildPortableHazardIdentificationExportData();
 
         /*
-         * 收集危害報告圖片及改善單附件，
-         * 並以 DataURL 去除重複項目。
+         * Preview 不能直接引用
+         * 其他 Workspace 的 cloud_file_id
+         * 或短效 Signed URL。
          */
-        const uniqueAttachmentMap =
-            collectUniqueHazardIdentificationCloudAttachments(
-                sourceData
+        verifyHazardWorkspacePayloadReferences(
+            sourceData,
+            []
+        );
+
+        /*
+         * SHA-256 比對同批次附件內容。
+         *
+         * 內容相同的圖片或附件
+         * 只需要上傳一次。
+         *
+         * Preview 不重用 Workspace File ID，
+         * 每次發布均建立自己的獨立附件。
+         */
+        const previewFilePlan =
+            await prepareHazardWorkspaceIncrementalFiles(
+                sourceData,
+                '',
+                []
             );
 
         const uniqueAttachments =
-            Array.from(
-                uniqueAttachmentMap.values()
-            );
+            previewFilePlan.uploads;
+
+        const cloudFileIdMap =
+            previewFilePlan.map;
 
         /*
          * 先建立 Building 狀態的 Preview。
@@ -16023,10 +16592,10 @@ async function submitCloudPreviewPublish() {
                 false
         });
 
-        const cloudFileIdMap =
-            new Map();
-
         /*
+         * cloudFileIdMap 已在資料準備階段建立，
+         * 保留 SHA-256 比對與附件對應資訊。
+         *
          * 最多同時上傳兩個附件。
          */
         if (
@@ -16048,6 +16617,12 @@ async function submitCloudPreviewPublish() {
                 cloudFileIdMap
             );
         }
+
+        /*
+         * 若多個 DataURL 對應相同的檔案內容，
+         * 全部沿用本次 Preview 已登錄的 File ID。
+         */
+        previewFilePlan.finalizeAliases();
 
         /*
          * 將所有 DataURL
@@ -16386,15 +16961,12 @@ function setCloudWorkspaceCreateBusy(
             'cloud-workspace-create-btn'
         );
 
-
     if (!button) {
         return;
     }
 
-
     button.disabled =
         !!busy;
-
 
     if (busy) {
 
@@ -16403,7 +16975,7 @@ function setCloudWorkspaceCreateBusy(
              h-10 sm:h-9
              px-2
              rounded-xl
-             border border-emerald-200
+             border-0
              bg-emerald-600
              text-white
              text-[11px] sm:text-xs
@@ -16413,20 +16985,17 @@ function setCloudWorkspaceCreateBusy(
              justify-center
              gap-1.5
              cursor-wait
-             transition
+             transition-all
              shadow-sm`;
 
-
         button.innerHTML = `
-            <span class="
-                w-3.5 h-3.5
-                shrink-0
-                rounded-full
-                border-2
-                border-white/40
-                border-t-white
-                animate-spin
-            "></span>
+            <i class="
+                fas fa-spinner
+                fa-spin
+                text-[13px]
+                leading-none
+            "
+               aria-hidden="true"></i>
 
             <span>
                 ${text || '正在建立...'}
@@ -16440,7 +17009,7 @@ function setCloudWorkspaceCreateBusy(
              h-10 sm:h-9
              px-2
              rounded-xl
-             border border-emerald-200
+             border-0
              bg-emerald-600
              hover:bg-emerald-700
              text-white
@@ -16450,9 +17019,8 @@ function setCloudWorkspaceCreateBusy(
              flex items-center
              justify-center
              gap-1.5
-             transition
+             transition-all
              shadow-sm`;
-
 
         button.innerHTML = `
             <svg viewBox="0 0 24 24"
@@ -16473,7 +17041,6 @@ function setCloudWorkspaceCreateBusy(
                 建立雲端工作資料
             </span>
         `;
-
     }
 }
 
@@ -17400,6 +17967,78 @@ if (
     }
 }
 
+/*
+ * 點選圖卡只指定儲存目標。
+ * 不會執行 load，也不會覆蓋目前資料。
+ */
+function selectHazardWorkspaceSaveTarget(card, event) {
+
+    if (
+        event?.target?.closest?.('button')
+    ) {
+        return;
+    }
+
+    if (hazardCloudWorkspaceOperation) {
+        return;
+    }
+
+    if (
+        !['admin', 'editor'].includes(
+            getCurrentRole()
+        )
+    ) {
+        return;
+    }
+
+    if (hasViewerPreviewData()) {
+        return;
+    }
+
+    if (
+        card?.dataset?.workspaceEnabled !== 'true'
+    ) {
+        return;
+    }
+
+    const id =
+        String(card.dataset.workspaceId || '').trim();
+
+    const revision =
+        Number(card.dataset.workspaceRevision) || 0;
+
+    if (!id || revision < 1) {
+        return;
+    }
+
+    /*
+     * 選回目前已載入的 Workspace，
+     * 代表取消另一份儲存目標。
+     */
+    hazardWorkspaceSaveTarget =
+        id === String(activeCloudWorkspaceId || '')
+            ? null
+            : {
+                id,
+                name: String(
+                    card.dataset.workspaceName ||
+                    '雲端工作資料'
+                ),
+                revision
+            };
+
+    updateActiveCloudWorkspaceUI();
+
+    renderCloudWorkspaceList(
+        hazardWorkspaceLastList
+    );
+
+    setCloudWorkspaceStatus(
+        `已選擇「${hazardWorkspaceSelectedTarget().name}」作為儲存目標。`,
+        'info'
+    );
+}
+
 function renderCloudWorkspaceList(
     workspaces
 ) {
@@ -17533,6 +18172,10 @@ const toggleEnabledMarkup =
             </svg>
         `;    
 
+const isSaveTarget =
+    String(workspace?.id || '') ===
+    hazardWorkspaceSelectedTarget().id;
+
 const isSameWorkspace =
     !!activeCloudWorkspaceId &&
     String(
@@ -17590,13 +18233,22 @@ const hasNewerWorkspaceRevision =
 
 
                     return `
-                        <div class="
-                            rounded-xl
-                            border border-sky-100
-                            bg-sky-50
-                            px-3.5 py-3
-                            shadow-sm
-                        ">
+                        <div
+                            data-workspace-id="${id}"
+                            data-workspace-name="${name}"
+                            data-workspace-revision="${revision}"
+                            data-workspace-enabled="${enabled ? 'true' : 'false'}"
+                            onclick="selectHazardWorkspaceSaveTarget(this, event)"
+                            onkeydown="if(event.target === this && (event.key === 'Enter' || event.key === ' ')){event.preventDefault();selectHazardWorkspaceSaveTarget(this, event);}"
+                            tabindex="${enabled ? '0' : '-1'}"
+                            aria-label="選擇${name}作為雲端儲存目標"
+                            class="
+                                rounded-xl
+                                border border-sky-100
+                                ${isSaveTarget ? 'bg-sky-100' : 'bg-sky-50'}
+                                px-3.5 py-3
+                                shadow-sm
+                            ">
 
 <div class="min-w-0">
 
@@ -17842,7 +18494,7 @@ ${
             ? `
                 <button type="button"
                         data-workspace-id="${id}"
-                        onclick="loadCloudWorkspaceIntoSystem('${id}')"
+                        onclick="loadCloudWorkspaceIntoSystem('${id}', this)"
                         class="
                             w-full h-8
                             rounded-lg
@@ -17926,7 +18578,7 @@ class="
             : `
                 <button type="button"
                         data-workspace-id="${id}"
-                        onclick="loadCloudWorkspaceIntoSystem('${id}')"
+                        onclick="loadCloudWorkspaceIntoSystem('${id}', this)"
 class="
     w-full h-8
     rounded-lg
@@ -17944,7 +18596,7 @@ class="
     gap-1.5
     transition-colors
     duration-150
-"
+">
 
 <i class="fas fa-cloud-arrow-down text-[13px] leading-none"
    aria-hidden="true"></i>
@@ -18039,6 +18691,7 @@ const workspaces =
         ? result.workspaces
         : [];
 
+hazardWorkspaceLastList = workspaces;
 
 renderCloudWorkspaceList(
     workspaces
@@ -18705,7 +19358,7 @@ setCloudWorkspaceStatus(
 
 setCloudWorkspaceCreateBusy(
     true,
-    `上傳 ${percent}%`
+    '上傳中'
 );
 
 
@@ -18913,6 +19566,504 @@ setCloudWorkspaceStatus(
 }
 
 /*
+ * Workspace 附件增量處理。
+ *
+ * 1. 同一批相同內容只上傳一次。
+ * 2. 目標 Workspace 已有相同檔案則重用 ID。
+ * 3. 不改變目前正式 Session。
+ */
+async function prepareHazardWorkspaceIncrementalFiles(
+    payload,
+    targetId,
+    targetFiles = []
+) {
+    const incoming = Array.from(
+        collectUniqueHazardIdentificationCloudAttachments(
+            payload
+        ).values()
+    );
+
+    const groups = new Map();
+    const reused = new Map();
+    const wanted = new Set();
+
+    function normalizeMime(value) {
+        const mime = String(value || '')
+            .toLowerCase()
+            .trim();
+
+        return mime === 'image/jpg'
+            ? 'image/jpeg'
+            : mime;
+    }
+
+    async function fingerprint(bytes, mime) {
+
+        const digest = new Uint8Array(
+            await crypto.subtle.digest(
+                'SHA-256',
+                bytes
+            )
+        );
+
+        const hash = Array.from(
+            digest,
+            byte => byte.toString(16).padStart(2, '0')
+        ).join('');
+
+        return `${bytes.length}:${normalizeMime(mime)}:${hash}`;
+    }
+
+    for (const file of incoming) {
+
+        const bytes = dataUrlToUint8Array(
+            file.data
+        );
+
+        if (
+            bytes.length < 1 ||
+            bytes.length > 5 * 1024 * 1024
+        ) {
+            throw new Error(
+                'WORKSPACE_FILE_SIZE_INVALID'
+            );
+        }
+
+        const mime = normalizeMime(
+            getHazardIdentificationCloudMimeType(
+                file.data,
+                file.type
+            )
+        );
+
+        const key = await fingerprint(
+            bytes,
+            mime
+        );
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                file,
+                aliases: []
+            });
+        }
+
+        groups.get(key).aliases.push(
+            file.data
+        );
+
+        wanted.add(
+            `${bytes.length}:${mime}`
+        );
+    }
+
+    /*
+     * 只下載可能相同的目標附件進行雜湊比對。
+     */
+    if (
+        targetId &&
+        groups.size > 0 &&
+        Array.isArray(targetFiles)
+    ) {
+
+        const candidates = Array.from(
+            new Map(
+                targetFiles
+                    .filter(file => {
+
+                        const id = String(
+                            file?.id ||
+                            file?.file_id ||
+                            ''
+                        ).trim();
+
+                        const size = Number(
+                            file?.file_size ??
+                            file?.size ??
+                            0
+                        );
+
+                        const mime = normalizeMime(
+                            file?.mime_type ||
+                            file?.mime ||
+                            file?.type
+                        );
+
+                        return (
+                            !!id &&
+                            wanted.has(`${size}:${mime}`)
+                        );
+                    })
+                    .map(file => [
+                        String(file.id || file.file_id),
+                        file
+                    ])
+            ).values()
+        );
+
+        if (candidates.length > 0) {
+
+            const signedMap =
+                await loadCloudWorkspaceSignedFiles(
+                    targetId,
+                    candidates.map(file => ({
+                        id: String(file.id || file.file_id)
+                    }))
+                );
+
+            for (const file of candidates) {
+
+                const id = String(
+                    file.id || file.file_id
+                );
+
+                const signedUrl =
+                    signedMap.get(id)?.signed_url;
+
+                if (!signedUrl) {
+                    throw new Error(
+                        'WORKSPACE_SIGNED_READ_INVALID'
+                    );
+                }
+
+                const response = await fetch(
+                    signedUrl,
+                    { cache: 'no-store' }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        'WORKSPACE_EXISTING_FILE_READ_FAILED'
+                    );
+                }
+
+                const bytes = new Uint8Array(
+                    await response.arrayBuffer()
+                );
+
+                const mime = normalizeMime(
+                    file.mime_type ||
+                    file.mime ||
+                    file.type
+                );
+
+                const key = await fingerprint(
+                    bytes,
+                    mime
+                );
+
+                const group = groups.get(key);
+
+                if (group) {
+                    for (const url of group.aliases) {
+                        reused.set(url, id);
+                    }
+                }
+            }
+        }
+    }
+
+    const uploads = [];
+
+    for (const group of groups.values()) {
+
+        if (!reused.has(group.file.data)) {
+            uploads.push(group.file);
+        }
+    }
+
+    return {
+        map: reused,
+        uploads,
+
+        /*
+         * 上傳完成後，將同內容的其他 DataURL
+         * 一併指向同一個 cloud_file_id。
+         */
+        finalizeAliases() {
+
+            for (const group of groups.values()) {
+
+                const id = reused.get(
+                    group.file.data
+                );
+
+                if (id) {
+                    for (const url of group.aliases) {
+                        reused.set(url, id);
+                    }
+                }
+            }
+        }
+    };
+}
+
+/*
+ * 尚未轉換的雲端附件 ID
+ * 必須確實屬於儲存目標。
+ */
+function verifyHazardWorkspacePayloadReferences(
+    payload,
+    targetFiles
+) {
+    const allowed = new Set(
+        (targetFiles || []).map(
+            file => String(
+                file?.id || file?.file_id || ''
+            )
+        )
+    );
+
+    for (const report of payload.reports || []) {
+
+        const id = String(
+            report?.imageCloudFileId ||
+            report?.imageData?.cloud_file_id ||
+            ''
+        ).trim();
+
+        if (id && !allowed.has(id)) {
+            throw new Error(
+                'WORKSPACE_FOREIGN_ATTACHMENT'
+            );
+        }
+
+        if (
+            !id &&
+            /^https?:\/\//i.test(
+                String(report?.imageData || '')
+            )
+        ) {
+            throw new Error(
+                'WORKSPACE_FOREIGN_ATTACHMENT'
+            );
+        }
+    }
+
+    for (
+        const attachment
+        of payload.inspectionAttachments || []
+    ) {
+
+        const id = String(
+            attachment?.cloud_file_id || ''
+        ).trim();
+
+        if (id && !allowed.has(id)) {
+            throw new Error(
+                'WORKSPACE_FOREIGN_ATTACHMENT'
+            );
+        }
+
+        if (
+            !id &&
+            /^https?:\/\//i.test(
+                String(attachment?.fileData || '')
+            )
+        ) {
+            throw new Error(
+                'WORKSPACE_FOREIGN_ATTACHMENT'
+            );
+        }
+    }
+}
+
+/*
+ * 雲端 Save 成功後：
+ * 重新取得目標附件 Signed URL，
+ * 將本機 Session 對應到目標 Workspace。
+ *
+ * 不覆蓋使用者在上傳期間新增的編輯。
+ */
+async function rebindHazardWorkspaceSession(
+    workspaceId,
+    cloudPayload,
+    snapshot
+) {
+
+    if (
+        hazardWorkspaceSessionSnapshot() !== snapshot
+    ) {
+        return false;
+    }
+
+    const result =
+        await cloudWorkspaceRequest({
+            action: 'load',
+            system_type: OSH_CLOUD_SYSTEM_TYPE,
+            workspace_id: workspaceId
+        });
+
+    const workspace = result?.workspace;
+
+    if (
+        String(workspace?.id || '') !==
+        String(workspaceId)
+    ) {
+        throw new Error(
+            'WORKSPACE_REBIND_FAILED'
+        );
+    }
+
+    const refs = new Set();
+
+    for (const report of cloudPayload.reports || []) {
+
+        const id =
+            report?.imageData?.cloud_file_id;
+
+        if (id) {
+            refs.add(String(id));
+        }
+    }
+
+    for (
+        const attachment
+        of cloudPayload.inspectionAttachments || []
+    ) {
+
+        if (attachment?.cloud_file_id) {
+            refs.add(
+                String(attachment.cloud_file_id)
+            );
+        }
+    }
+
+    const files = (workspace.files || [])
+        .filter(file =>
+            refs.has(String(file?.id || ''))
+        );
+
+    if (files.length !== refs.size) {
+        throw new Error(
+            'WORKSPACE_REBIND_FAILED'
+        );
+    }
+
+    const signedMap =
+        await loadCloudWorkspaceSignedFiles(
+            workspaceId,
+            files
+        );
+
+    const hydrated =
+        hydrateHazardIdentificationCloudPayload(
+            cloudPayload,
+            signedMap
+        );
+
+    /*
+     * 網路處理期間資料若發生變化，
+     * 不覆蓋使用者的新編輯。
+     */
+    if (
+        hazardWorkspaceSessionSnapshot() !== snapshot
+    ) {
+        return false;
+    }
+
+    if (
+        sessionReports.length !== hydrated.reports.length ||
+        sessionInspectionAttachments.length !==
+            hydrated.inspectionAttachments.length
+    ) {
+        throw new Error(
+            'WORKSPACE_REBIND_FAILED'
+        );
+    }
+
+    hydrated.reports.forEach((report, index) => {
+
+        if (
+            !cloudPayload.reports[index]
+                ?.imageData?.cloud_file_id
+        ) {
+            return;
+        }
+
+        /*
+         * 保留目前工作畫面的 DataURL，
+         * 避免影響原有 AI 危害識別功能。
+         *
+         * 已成功儲存的 Cloud File ID
+         * 仍然重新綁定至目標 Workspace。
+         */
+        const oldReport = sessionReports[index];
+
+        const isCurrentImage =
+            String(currentReportId ?? '') ===
+                String(oldReport?.id ?? '') &&
+            String(base64Image || '') ===
+                String(oldReport?.imageData || '');
+
+        /*
+         * 目前畫面使用 DataURL 時，
+         * 不把它直接換成 Signed URL。
+         */
+        const keepLocalDataUrl =
+            isCurrentImage &&
+            /^data:/i.test(String(base64Image || ''));
+
+        const localDataUrl =
+            keepLocalDataUrl ? base64Image : '';
+
+        /*
+         * 原本已經是雲端網址的照片，
+         * 維持原有的 Signed URL 更新方式。
+         */
+        if (isCurrentImage && !keepLocalDataUrl) {
+            base64Image = report.imageData;
+        }
+
+        /*
+         * Cloud File ID 更新為儲存目標的 ID。
+         *
+         * 只有目前正開啟、且仍使用原 DataURL
+         * 的照片，才保留該 DataURL。
+         */
+        for (const key of [
+            'imageData',
+            'imageCloudFileId',
+            'imageCloudFileName',
+            'imageCloudFileType',
+            'imageCloudFileSize',
+            'isCloudImage'
+        ]) {
+            sessionReports[index][key] =
+                key === 'imageData' && keepLocalDataUrl
+                    ? localDataUrl
+                    : report[key];
+        }
+    });
+
+    hydrated.inspectionAttachments.forEach(
+        (attachment, index) => {
+
+            if (
+                !cloudPayload.inspectionAttachments[index]
+                    ?.cloud_file_id
+            ) {
+                return;
+            }
+
+            for (const key of [
+                'fileData',
+                'cloud_file_id',
+                'is_cloud_file',
+                'fileName',
+                'fileSize',
+                'mimeType'
+            ]) {
+                sessionInspectionAttachments[index][key] =
+                    attachment[key];
+            }
+        }
+    );
+
+    return true;
+}
+
+/*
  * =========================================================
  * 從目前正式危害識別資料
  * 建立新的 Cloud Workspace。
@@ -18989,6 +20140,16 @@ async function createCloudWorkspaceFromCurrentData() {
     }
 
 
+    if (hazardCloudWorkspaceOperation) {
+        setCloudWorkspaceStatus(
+            '雲端工作資料正在處理中，請完成目前操作後再試。',
+            'error'
+        );
+        return;
+    }
+
+    hazardCloudWorkspaceOperation = 'create';
+
     let workspaceId =
         '';
 
@@ -19015,23 +20176,45 @@ setCloudWorkspaceStatus(
          * 使用目前正式 JSON
          * 完整資料結構。
          */
+/*
+ * 建立前保留目前 Session 快照。
+ */
+const snapshot =
+    hazardWorkspaceSessionSnapshot();
+
+/*
+ * 如果目前資料來自其他 Workspace，
+ * 先將雲端附件還原為可獨立保存的 DataURL。
+ */
 const localPayload =
-    buildHazardIdentificationExportData();
+    activeCloudWorkspaceId
+        ? await buildPortableHazardIdentificationExportData()
+        : buildHazardIdentificationExportData();
 
+/*
+ * 新 Workspace 不得沿用其他 Workspace 的附件 ID。
+ */
+verifyHazardWorkspacePayloadReferences(
+    localPayload,
+    []
+);
 
-        /*
-         * 掃描所有不重複附件。
-         */
-const attachmentMap =
-    collectUniqueHazardIdentificationCloudAttachments(
-        localPayload
+/*
+ * 新建 Workspace 尚無已登錄附件。
+ * 對本次附件進行 SHA-256 去重。
+ */
+const filePlan =
+    await prepareHazardWorkspaceIncrementalFiles(
+        localPayload,
+        '',
+        []
     );
 
+const uniqueAttachments =
+    filePlan.uploads;
 
-        const uniqueAttachments =
-            Array.from(
-                attachmentMap.values()
-            );
+const cloudFileIdMap =
+    filePlan.map;
 
 
         /*
@@ -19047,9 +20230,40 @@ const attachmentMap =
             new Date()
                 .getFullYear();
 
+        const baseWorkspaceName =
+            `${currentYear}年度危害識別工作資料`;
 
-const workspaceName =
-    `${currentYear}年度危害識別工作資料`;
+        setCloudWorkspaceStatus(
+            '正在檢查雲端工作資料名稱...',
+            'info'
+        );
+
+        const listResult =
+            await runCloudWorkspaceWithRetry(
+                () => cloudWorkspaceRequest({
+                    action: 'list',
+                    system_type: OSH_CLOUD_SYSTEM_TYPE
+                }),
+                { maxAttempts: 3 }
+            );
+
+        if (!Array.isArray(listResult?.workspaces)) {
+            throw new Error('WORKSPACE_LIST_INVALID');
+        }
+
+        const existingNames = new Set(
+            listResult.workspaces.map(item =>
+                String(item?.workspace_name || '').trim()
+            )
+        );
+
+        let workspaceName = baseWorkspaceName;
+        let suffix = 2;
+
+        while (existingNames.has(workspaceName)) {
+            workspaceName = `${baseWorkspaceName}(${suffix})`;
+            suffix++;
+        }
 
 
         /*
@@ -19105,13 +20319,13 @@ payload: {
         workspaceId =
             createdWorkspace.id;
 
-
         /*
          * 第二步：
          * 上傳附件。
+         *
+         * cloudFileIdMap 已由前面的
+         * SHA-256 處理函式建立。
          */
-        const cloudFileIdMap =
-            new Map();
 
 
         if (
@@ -19131,6 +20345,8 @@ payload: {
                 cloudFileIdMap
             );
         }
+
+        filePlan.finalizeAliases();
 
 
         /*
@@ -19193,9 +20409,8 @@ const cloudPayload =
 
 
         if (
-            !saveResult
-                ?.workspace
-                ?.id
+            !saveResult?.workspace?.id ||
+            String(saveResult.workspace.id) !== String(workspaceId)
         ) {
             throw new Error(
                 'WORKSPACE_SAVE_INVALID'
@@ -19206,6 +20421,27 @@ const cloudPayload =
 creationCompleted =
     true;
 
+/*
+ * Workspace 已經成功建立。
+ * 接下來嘗試把 Session 附件綁定至新 Workspace。
+ */
+let sessionRebound = false;
+
+try {
+    sessionRebound =
+        await rebindHazardWorkspaceSession(
+            workspaceId,
+            cloudPayload,
+            snapshot
+        );
+
+} catch (rebindError) {
+
+    console.warn(
+        'Workspace 已建立，但本機附件重綁未完成：',
+        rebindError
+    );
+}    
 
 /*
  * 建立完成後，
@@ -19219,30 +20455,27 @@ const savedWorkspace =
     saveResult.workspace;
 
 
-activeCloudWorkspaceId =
-    String(
-        savedWorkspace.id ||
-        workspaceId
-    );
-
-
-activeCloudWorkspaceName =
-    String(
-        savedWorkspace.workspace_name ||
-        workspaceName
-    );
-
-
-activeCloudWorkspaceRevision =
-    Number(
-        savedWorkspace.revision
-    ) || 1;
-
-
 /*
- * 立即更新 Workspace 畫面，
- * 顯示目前工作資料與 Revision。
+ * 建立成功後，取消舊的儲存目標選擇。
  */
+hazardWorkspaceSaveTarget = null;
+
+if (sessionRebound) {
+
+    activeCloudWorkspaceId =
+        String(savedWorkspace.id || workspaceId);
+
+    activeCloudWorkspaceName =
+        String(
+            savedWorkspace.workspace_name ||
+            workspaceName
+        );
+
+    activeCloudWorkspaceRevision =
+        Number(savedWorkspace.revision) || 1;
+
+}
+
 updateActiveCloudWorkspaceUI();
 
 
@@ -19250,11 +20483,10 @@ updateActiveCloudWorkspaceUI();
  * 目前這一刻的資料
  * 已經完整儲存至雲端。
  */
-hazardWorkspaceDirty =
-    false;
-
-inspectionDraftDirty =
-    false;
+if (sessionRebound) {
+    hazardWorkspaceDirty = false;
+    inspectionDraftDirty = false;
+}
 
 
 /*
@@ -19267,16 +20499,21 @@ sessionNeedsExport =
     true;
 
 
+try {
+    await loadCloudWorkspaceList();
+} catch (listError) {
+    console.warn(
+        'Workspace 已建立，但清單重新整理失敗：',
+        listError
+    );
+}
+
 setCloudWorkspaceStatus(
-    `已建立「${activeCloudWorkspaceName}」Revision ${activeCloudWorkspaceRevision}。`,
-    'success'
+    sessionRebound
+        ? `已建立「${activeCloudWorkspaceName}」Revision ${activeCloudWorkspaceRevision}。`
+        : `已建立「${workspaceName}」，但本機附件尚未同步，請重新載入該工作資料。`,
+    sessionRebound ? 'success' : 'error'
 );
-
-
-/*
- * 重新整理 Workspace 清單。
- */
-await loadCloudWorkspaceList();
 
 
     } catch (error) {
@@ -19352,6 +20589,9 @@ try {
             WORKSPACE_CREATE_FAILED:
                 '建立雲端工作資料失敗。',
 
+            WORKSPACE_LIST_INVALID:
+                '雲端工作資料清單不完整，為避免重名，已取消建立。',                
+
             WORKSPACE_CREATE_INVALID:
                 '雲端工作資料建立結果不完整。',
 
@@ -19404,6 +20644,10 @@ try {
         
 
     } finally {
+
+        if (hazardCloudWorkspaceOperation === 'create') {
+            hazardCloudWorkspaceOperation = '';
+        }
 
         setCloudWorkspaceCreateBusy(
             false
@@ -19579,7 +20823,8 @@ async function loadCloudWorkspaceSignedFiles(
  * =========================================================
  */
 async function loadCloudWorkspaceIntoSystem(
-    workspaceId
+    workspaceId,
+    sourceButton = null
 ) {
     const role =
         getCurrentRole();
@@ -19613,6 +20858,14 @@ async function loadCloudWorkspaceIntoSystem(
         return;
     }
 
+    if (hazardCloudWorkspaceOperation) {
+        setCloudWorkspaceStatus(
+            '雲端工作資料正在處理中，請完成目前操作後再試。',
+            'error'
+        );
+        return;
+    }
+
     /*
      * 載入 Workspace 會取代目前工作區。
      */
@@ -19632,6 +20885,42 @@ async function loadCloudWorkspaceIntoSystem(
     ) {
         return;
     }
+
+    /*
+     * 記住載入按鈕原本的內容。
+     */
+    const originalLoadButtonHTML =
+        sourceButton?.innerHTML || '';
+
+    /*
+     * 使用者確認載入後，
+     * 才啟動旋轉動畫。
+     */
+    if (sourceButton) {
+
+        sourceButton.disabled =
+            true;
+
+        sourceButton.classList.add(
+            'cursor-wait'
+        );
+
+        sourceButton.innerHTML = `
+            <i class="
+                fas fa-spinner
+                fa-spin
+                text-[13px]
+                leading-none
+            "
+               aria-hidden="true"></i>
+
+            <span>
+                載入中
+            </span>
+        `;
+    }
+
+    hazardCloudWorkspaceOperation = 'load';
 
     try {
         setCloudWorkspaceStatus(
@@ -19809,6 +21098,12 @@ async function loadCloudWorkspaceIntoSystem(
                 workspace.revision
             ) || 1;
 
+        /*
+         * 正式載入新資料後，
+         * 儲存目標恢復為目前載入的 Workspace。
+         */
+        hazardWorkspaceSaveTarget = null;
+
         updateActiveCloudWorkspaceUI();
 
         /*
@@ -19887,6 +21182,30 @@ async function loadCloudWorkspaceIntoSystem(
             '載入雲端工作資料失敗。',
             'error'
         );
+    } finally {
+
+        if (
+            hazardCloudWorkspaceOperation === 'load'
+        ) {
+            hazardCloudWorkspaceOperation = '';
+        }
+
+        /*
+         * 不論載入成功或失敗，
+         * 都恢復按鈕原本內容。
+         */
+        if (sourceButton) {
+
+            sourceButton.innerHTML =
+                originalLoadButtonHTML;
+
+            sourceButton.disabled =
+                false;
+
+            sourceButton.classList.remove(
+                'cursor-wait'
+            );
+        }
     }
 }
 
@@ -19927,12 +21246,15 @@ async function saveCurrentCloudWorkspace() {
     /*
      * 必須先有目前正在使用的 Workspace。
      */
+    const selectedTarget =
+        hazardWorkspaceSelectedTarget();
+
     if (
-        !activeCloudWorkspaceId ||
-        activeCloudWorkspaceRevision < 1
+        !selectedTarget.id ||
+        selectedTarget.revision < 1
     ) {
         setCloudWorkspaceStatus(
-            '目前尚未載入任何雲端工作資料。',
+            '請先選擇雲端工作資料作為儲存目標。',
             'error'
         );
 
@@ -19992,6 +21314,15 @@ async function saveCurrentCloudWorkspace() {
         return;
     }
 
+    if (hazardCloudWorkspaceOperation) {
+        setCloudWorkspaceStatus(
+            '雲端工作資料正在處理中，請完成目前操作後再試。',
+            'error'
+        );
+        return;
+    }
+
+    hazardCloudWorkspaceOperation = 'save';
 
     const button =
         document.getElementById(
@@ -20011,31 +21342,29 @@ async function saveCurrentCloudWorkspace() {
 
     try {
 
-        if (button) {
+if (button) {
 
-            button.disabled =
-                true;
+    button.disabled =
+        true;
 
-            button.classList.add(
-                'cursor-wait'
-            );
+    button.classList.add(
+        'cursor-wait'
+    );
 
-            button.innerHTML = `
-                <span class="
-                    w-3.5 h-3.5
-                    shrink-0
-                    rounded-full
-                    border-2
-                    border-white/40
-                    border-t-white
-                    animate-spin
-                "></span>
+    button.innerHTML = `
+        <i class="
+            fas fa-spinner
+            fa-spin
+            text-[13px]
+            leading-none
+        "
+           aria-hidden="true"></i>
 
-                <span>
-                    正在儲存...
-                </span>
-            `;
-        }
+        <span>
+            正在儲存...
+        </span>
+    `;
+}
 
 
         setCloudWorkspaceStatus(
@@ -20052,34 +21381,89 @@ async function saveCurrentCloudWorkspace() {
          * 前面已由 hasUnsavedDraftChanges()
          * 阻擋。
          */
-        const localPayload =
-            buildHazardIdentificationExportData();
+/*
+ * 保留開始儲存時的 Session 快照。
+ */
+const snapshot =
+    hazardWorkspaceSessionSnapshot();
 
+const targetId =
+    selectedTarget.id;
 
-        /*
-         * 只找目前仍為 DataURL 的新附件。
-         *
-         * 已從 Workspace 載入、
-         * 已具有 cloud_file_id 的附件
-         * 不會重複上傳。
-         */
-        const attachmentMap =
-            collectUniqueHazardIdentificationCloudAttachments(
-                localPayload
-            );
+/*
+ * 儲存前重新取得目標 Workspace 最新狀態。
+ */
+const targetResult =
+    await cloudWorkspaceRequest({
+        action: 'load',
+        system_type: OSH_CLOUD_SYSTEM_TYPE,
+        workspace_id: targetId
+    });
 
+const target =
+    targetResult?.workspace;
 
-        const uniqueAttachments =
-            Array.from(
-                attachmentMap.values()
-            );
+if (
+    String(target?.id || '') !== targetId ||
+    String(target?.system_type || '') !==
+        OSH_CLOUD_SYSTEM_TYPE
+) {
+    throw new Error(
+        'WORKSPACE_TARGET_INVALID'
+    );
+}
 
+if (target.enabled === false) {
+    throw new Error(
+        'WORKSPACE_DISABLED'
+    );
+}
 
-        /*
-         * DataURL → 新 cloud_file_id。
-         */
-        const newCloudFileIdMap =
-            new Map();
+/*
+ * Revision 有變化，就不能覆蓋。
+ */
+if (
+    Number(target.revision) !==
+    selectedTarget.revision
+) {
+    throw new Error(
+        'WORKSPACE_REVISION_CONFLICT'
+    );
+}
+
+/*
+ * 跨 Workspace 時必須先將來源附件
+ * 轉成完整 DataURL。
+ */
+const localPayload =
+    targetId !== String(activeCloudWorkspaceId || '') &&
+    !!activeCloudWorkspaceId
+        ? await buildPortableHazardIdentificationExportData()
+        : buildHazardIdentificationExportData();
+
+/*
+ * 禁止直接引用其他 Workspace 的附件 ID。
+ */
+verifyHazardWorkspacePayloadReferences(
+    localPayload,
+    target.files || []
+);
+
+/*
+ * 與目標已登錄的附件進行 SHA-256 比對。
+ */
+const filePlan =
+    await prepareHazardWorkspaceIncrementalFiles(
+        localPayload,
+        targetId,
+        target.files || []
+    );
+
+const uniqueAttachments =
+    filePlan.uploads;
+
+const newCloudFileIdMap =
+    filePlan.map;
 
 
         /*
@@ -20100,12 +21484,14 @@ async function saveCurrentCloudWorkspace() {
 
 
             await uploadCloudWorkspaceSaveAttachmentsWithConcurrency(
-                activeCloudWorkspaceId,
+                selectedTarget.id,
                 uniqueAttachments,
                 newCloudFileIdMap,
                 newlyRegisteredFiles
             );
         }
+
+        filePlan.finalizeAliases();
 
 
         /*
@@ -20128,7 +21514,7 @@ async function saveCurrentCloudWorkspace() {
 
 
         setCloudWorkspaceStatus(
-            `正在儲存 Revision ${activeCloudWorkspaceRevision}...`,
+            `正在儲存 Revision ${selectedTarget.revision}...`,
             'info'
         );
 
@@ -20158,10 +21544,10 @@ async function saveCurrentCloudWorkspace() {
                     OSH_CLOUD_SYSTEM_TYPE,
 
                 workspace_id:
-                    activeCloudWorkspaceId,
+                    selectedTarget.id,
 
                 revision:
-                    activeCloudWorkspaceRevision,
+                    selectedTarget.revision,
 
                 payload:
                     cloudPayload
@@ -20173,7 +21559,8 @@ async function saveCurrentCloudWorkspace() {
 
 
         if (
-            !savedWorkspace?.id
+            !savedWorkspace?.id ||
+            String(savedWorkspace.id) !== String(selectedTarget.id)
         ) {
             throw new Error(
                 'WORKSPACE_SAVE_INVALID'
@@ -20181,42 +21568,81 @@ async function saveCurrentCloudWorkspace() {
         }
 
 
-        /*
-         * Server Save 成功後，
-         * 更新目前 Revision。
-         */
-        activeCloudWorkspaceRevision =
-            Number(
-                savedWorkspace.revision
-            ) ||
-            (
-                activeCloudWorkspaceRevision +
-                1
-            );
+/*
+ * Server Save 已經成功。
+ * 後續重綁失敗，不代表雲端 Save 失敗。
+ */
+let sessionRebound = false;
 
+try {
 
-        if (
-            savedWorkspace
-                .workspace_name
-        ) {
-            activeCloudWorkspaceName =
-                savedWorkspace
-                    .workspace_name;
-        }
+    sessionRebound =
+        await rebindHazardWorkspaceSession(
+            selectedTarget.id,
+            cloudPayload,
+            snapshot
+        );
 
+} catch (rebindError) {
 
-        updateActiveCloudWorkspaceUI();
+    console.warn(
+        'Workspace 已儲存，但本機附件重綁未完成：',
+        rebindError
+    );
+}
+
+const savedRevision =
+    Number(savedWorkspace.revision) ||
+    selectedTarget.revision + 1;
+
+if (sessionRebound) {
+
+    /*
+     * 本機附件已成功重綁至目標。
+     */
+    activeCloudWorkspaceId =
+        selectedTarget.id;
+
+    activeCloudWorkspaceName =
+        String(
+            savedWorkspace.workspace_name ||
+            selectedTarget.name
+        );
+
+    activeCloudWorkspaceRevision =
+        savedRevision;
+
+    hazardWorkspaceSaveTarget = null;
+
+} else {
+
+    /*
+     * 雲端已儲存，但本機尚未完成同步。
+     *
+     * 保留原本 Session 來源；
+     * 同時記住已成功儲存的目標 Revision。
+     */
+    hazardWorkspaceSaveTarget = {
+        id: selectedTarget.id,
+        name: String(
+            savedWorkspace.workspace_name ||
+            selectedTarget.name
+        ),
+        revision: savedRevision
+    };
+}
+
+updateActiveCloudWorkspaceUI();
 
 
         /*
          * 目前正式 Session 的內容
          * 已經完整寫入 Cloud Workspace。
          */
-        hazardWorkspaceDirty =
-            false;
-
-        inspectionDraftDirty =
-            false;
+        if (sessionRebound) {
+            hazardWorkspaceDirty = false;
+            inspectionDraftDirty = false;
+        }
 
 
         /*
@@ -20229,22 +21655,27 @@ async function saveCurrentCloudWorkspace() {
             true;
 
 
-        setCloudWorkspaceStatus(
-            `已儲存「${activeCloudWorkspaceName}」Revision ${activeCloudWorkspaceRevision}。`,
-            'success'
-        );
+        try {
+            await loadCloudWorkspaceList();
+        } catch (listError) {
+            console.warn(
+                'Workspace 已儲存，但清單更新失敗：',
+                listError
+            );
+        }
 
+        setCloudWorkspaceStatus(
+            sessionRebound
+                ? `已儲存「${activeCloudWorkspaceName}」Revision ${activeCloudWorkspaceRevision}。`
+                : `Revision ${savedRevision} 已儲存，但本機附件尚未同步，請重新載入工作資料。`,
+            sessionRebound ? 'success' : 'error'
+        );
 
         showToast(
-            `雲端工作資料已儲存為 Revision ${activeCloudWorkspaceRevision}`
+            sessionRebound
+                ? `雲端工作資料已儲存為 Revision ${savedRevision}`
+                : '雲端已儲存，但本機附件需要重新載入。'
         );
-
-
-        /*
-         * 更新 Workspace 清單中的
-         * Revision / 更新時間。
-         */
-        await loadCloudWorkspaceList();
 
 
     } catch (error) {
@@ -20274,9 +21705,8 @@ async function saveCurrentCloudWorkspace() {
          * =====================================================
          */
         if (
-            activeCloudWorkspaceId &&
-            newlyRegisteredFiles.length >
-                0
+            selectedTarget.id &&
+            newlyRegisteredFiles.length > 0
         ) {
 
             try {
@@ -20291,7 +21721,7 @@ async function saveCurrentCloudWorkspace() {
                                 OSH_CLOUD_SYSTEM_TYPE,
 
                             workspace_id:
-                                activeCloudWorkspaceId,
+                                selectedTarget.id,
 
                             file_ids:
                                 newlyRegisteredFiles
@@ -20350,6 +21780,18 @@ async function saveCurrentCloudWorkspace() {
             WORKSPACE_SAVE_INVALID:
                 '雲端工作資料儲存結果不完整。',
 
+                            WORKSPACE_TARGET_INVALID:
+                '儲存目標不正確，已停止儲存。',
+
+            WORKSPACE_FOREIGN_ATTACHMENT:
+                '附件來源與儲存目標不同，且無法安全轉換。',
+
+            WORKSPACE_EXISTING_FILE_READ_FAILED:
+                '無法讀取目標工作資料的既有附件進行比對。',
+
+            WORKSPACE_REBIND_FAILED:
+                '雲端已儲存，但本機附件重新綁定未完成。',
+
             WORKSPACE_REVISION_INVALID:
                 '雲端工作版本資訊無效。',
 
@@ -20397,7 +21839,18 @@ async function saveCurrentCloudWorkspace() {
                 'WORKSPACE_NOT_FOUND'
         ) {
 
-            clearActiveCloudWorkspace();
+            if (
+                selectedTarget.id ===
+                String(activeCloudWorkspaceId || '')
+            ) {
+
+                clearActiveCloudWorkspace();
+
+            } else {
+
+                hazardWorkspaceSaveTarget = null;
+                updateActiveCloudWorkspaceUI();
+            }
 
 
             try {
@@ -20446,11 +21899,15 @@ async function saveCurrentCloudWorkspace() {
 
     } finally {
 
+        if (hazardCloudWorkspaceOperation === 'save') {
+            hazardCloudWorkspaceOperation = '';
+        }
+
         if (button) {
 
             button.disabled =
-                !activeCloudWorkspaceId ||
-                activeCloudWorkspaceRevision < 1;
+                !hazardWorkspaceSelectedTarget().id ||
+                hazardWorkspaceSelectedTarget().revision < 1;
 
             button.classList.remove(
                 'cursor-wait'
@@ -23087,6 +24544,15 @@ function renderCloudPreviewManageList(
     const showAdminActions =
         getCurrentRole() === 'admin';
 
+    /*
+     * 管理者：可管理全部預覽。
+     * 使用者：可管理本人預覽。
+     * 預覽者：不可管理。
+     */
+    const showPreviewManageActions =
+        showAdminActions ||
+        getCurrentRole() === 'editor';
+
 
     if (
         !Array.isArray(previews) ||
@@ -23316,7 +24782,7 @@ hover:border-indigo-200
     <!-- 右側：管理操作 -->
     <div class="
         shrink-0
-        ${showAdminActions ? 'flex' : 'hidden'}
+        ${showPreviewManageActions ? 'flex' : 'hidden'}
         items-center
         gap-1
     ">
@@ -24314,18 +25780,62 @@ function setCloudPreviewEditStatus(
 }
 
 
+/* =========================================================
+   OSHIS｜編輯雲端預覽有效期限
+
+   自訂日曆按鈕：
+   開啟瀏覽器原生日期時間選擇器。
+
+   不修改日期值、權限或雲端更新邏輯。
+========================================================= */
+
+function openCloudPreviewExpiryPicker() {
+
+    const input =
+        document.getElementById(
+            'cloud-preview-edit-expiry'
+        );
+
+    if (
+        !input ||
+        input.disabled ||
+        input.readOnly
+    ) {
+        return;
+    }
+
+    if (
+        typeof input.showPicker === 'function'
+    ) {
+
+        try {
+            input.showPicker();
+            return;
+        } catch (error) {
+            // 無法開啟時保留原生輸入方式
+        }
+
+    }
+
+    input.focus();
+}
+
+
 function openCloudPreviewEditModalFromButton(
     button
 ) {
     /*
-     * 介面層僅允許管理者。
+     * 管理者及使用者可進入編輯。
+     * 使用者的預覽所有權由後端驗證。
      */
+    const role = getCurrentRole();
+
     if (
-        getCurrentRole() !==
-        'admin'
+        role !== 'admin' &&
+        role !== 'editor'
     ) {
         showToast(
-            '僅管理者可編輯雲端預覽。',
+            '目前權限無法編輯雲端預覽。',
             'error'
         );
 
@@ -24458,8 +25968,31 @@ function openCloudPreviewEditModalFromButton(
 
 
     if (expiryInput) {
+
         expiryInput.value =
             expiresLocal;
+
+        /*
+         * 瀏覽器支援 showPicker 時，
+         * 啟用桌機自訂日曆按鈕。
+         *
+         * 不支援時保留原生日期時間操作。
+         * 手機版仍由原本 CSS 接管。
+         */
+        const expiryWrap =
+            document.getElementById(
+                'cloud-preview-edit-expiry-wrap'
+            );
+
+        if (expiryWrap) {
+
+            expiryWrap.classList.toggle(
+                'cloud-expiry-picker-supported',
+                typeof expiryInput.showPicker === 'function'
+            );
+
+        }
+
     }
 
 
@@ -24546,12 +26079,14 @@ function closeCloudPreviewEditModalOutside(
 
 async function submitCloudPreviewEdit() {
 
+    const role = getCurrentRole();
+
     if (
-        getCurrentRole() !==
-        'admin'
+        role !== 'admin' &&
+        role !== 'editor'
     ) {
         showToast(
-            '僅管理者可編輯雲端預覽。',
+            '目前權限無法編輯雲端預覽。',
             'error'
         );
 
@@ -24964,15 +26499,18 @@ async function toggleCloudPreviewEnabledFromButton(
 ) {
 
     /*
-     * 介面層只允許管理者操作。
+     * 管理者與使用者皆可操作。
+     * 使用者僅能變更本人發布的預覽。
      */
+    const role = getCurrentRole();
+
     if (
-        getCurrentRole() !==
-        'admin'
+        role !== 'admin' &&
+        role !== 'editor'
     ) {
 
         showToast(
-            '僅管理者可變更雲端預覽狀態。',
+            '目前權限無法變更雲端預覽狀態。',
             'error'
         );
 
@@ -25216,15 +26754,19 @@ async function deleteCloudPreviewFromButton(
 ) {
 
     /*
-     * 介面層只允許管理者操作。
+     * 管理者與使用者皆可操作。
+     * 使用者只能刪除本人發布的預覽。
+     * 所有權由後端驗證。
      */
+    const role = getCurrentRole();
+
     if (
-        getCurrentRole() !==
-        'admin'
+        role !== 'admin' &&
+        role !== 'editor'
     ) {
 
         showToast(
-            '僅管理者可刪除雲端預覽。',
+            '目前權限無法刪除雲端預覽。',
             'error'
         );
 
@@ -25793,6 +27335,30 @@ function hasViewerPreviewData() {
             Array.isArray(previewInspectionAttachments)
         )
     );
+}
+
+/* =========================================================
+   OSHIS｜缺失改善單日期選擇器
+
+   僅供自訂日曆圖示按鈕使用。
+   保留原生日期欄位及既有日期處理邏輯。
+========================================================= */
+
+function openInspectionDatePicker(inputId) {
+
+    const input = document.getElementById(inputId);
+
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+        try {
+            input.showPicker();
+            return;
+        } catch (error) {}
+    }
+
+    input.focus();
+    input.click();
 }
 
 function initIcons() {
@@ -26713,6 +28279,23 @@ function getCurrentRole() {
 
 function canEditData() {
     return isAdmin || isEditor;
+}
+
+function canPrintPreviewAttachment() {
+    return canEditData();
+}
+
+function updateFilePreviewPrintButton() {
+    const button = document.getElementById(
+        'file-preview-print-btn'
+    );
+
+    if (button) {
+        button.classList.toggle(
+            'hidden',
+            !canPrintPreviewAttachment()
+        );
+    }
 }
 
 function canDeleteData() {
@@ -28506,6 +30089,9 @@ currentReportData.suggestions =
 }
         
 function updateUIVisibility() {
+
+    updateFilePreviewPrintButton();
+
     const hasImage =
         !!base64Image;
 
@@ -31862,10 +33448,12 @@ let filePreviewTouchScale = 1;
 let filePreviewPdfDocument = null;
 let filePreviewPdfRenderSerial = 0;
 let filePreviewPdfAppliedRelativeScale = 1;
+let filePreviewPdfPrintReady = false;
 let filePreviewGesturesReady = false;
 let filePreviewPdfJsLoadingPromise = null;
 let filePreviewPdfRenderTimer = null;
 let filePreviewPdfScaleFrame = null;
+let filePreviewImageViewportTimer = null;
 
 function dataUrlToBlobUrl(dataUrl) {
     const parts = String(dataUrl || '').split(',');
@@ -31959,6 +33547,11 @@ function revokeCurrentPreviewObjectUrl() {
 function resetFilePreviewContent() {
     const { frame, image, pdfPages, toolbar } = getFilePreviewElements();
 
+    if (filePreviewImageViewportTimer) {
+        clearTimeout(filePreviewImageViewportTimer);
+        filePreviewImageViewportTimer = null;
+    }
+
     filePreviewPdfRenderSerial++;
     if (filePreviewPdfRenderTimer) {
         clearTimeout(filePreviewPdfRenderTimer);
@@ -31984,6 +33577,7 @@ imagePreviewDefaultScale = 1;
 filePreviewTouchDistance = null;
 filePreviewTouchScale = 1;
 filePreviewPdfAppliedRelativeScale = 1;
+filePreviewPdfPrintReady = false;
 
     revokeCurrentPreviewObjectUrl();
 
@@ -32026,37 +33620,165 @@ function getImageFitPreviewScale(image) {
     const { body } = getFilePreviewElements();
     const naturalWidth = image?.naturalWidth || 1;
     const naturalHeight = image?.naturalHeight || 1;
-    const availableWidth = Math.max(260, (body?.clientWidth || window.innerWidth) - 36);
-    const availableHeight = Math.max(260, (body?.clientHeight || window.innerHeight) - 36);
-const fitScale = Math.min(availableWidth / naturalWidth, availableHeight / naturalHeight, 1);
+    const availableWidth = Math.max(1, (body?.clientWidth || window.innerWidth) - 36);
+    const availableHeight = Math.max(1, (body?.clientHeight || window.innerHeight) - 36);
 
-return clampPreviewScale(fitScale, 0.15, 1);
+    const fitScale = Math.min(
+        availableWidth / naturalWidth,
+        availableHeight / naturalHeight,
+        1
+    );
+
+    return clampPreviewScale(fitScale, 0.01, 1);
 }
 
-function applyPreviewImageScale() {
-    const { image } = getFilePreviewElements();
-    if (!image || !image.naturalWidth || !image.naturalHeight) return;
+function applyPreviewImageScale(options = {}) {
 
-    const displayWidth = Math.max(1, Math.round(image.naturalWidth * filePreviewScale));
-    const displayHeight = Math.max(1, Math.round(image.naturalHeight * filePreviewScale));
-    const isSideways = Math.abs(filePreviewRotation % 180) === 90;
+    const { body, image } = getFilePreviewElements();
+
+    if (
+        !image ||
+        !image.naturalWidth ||
+        !image.naturalHeight
+    ) {
+        return;
+    }
+
+    // =====================================================
+    // 一、縮放前記錄目前畫面中心
+    // =====================================================
+
+    const preserveScroll =
+        options.preserveScroll !== false;
+
+    let zoomAnchor = null;
+
+    // 圖片尚未載入完成或仍處於隱藏狀態時，
+    // 不進行捲動補償，避免影響防閃現機制。
+    if (
+        preserveScroll &&
+        body &&
+        !image.classList.contains('hidden')
+    ) {
+
+        const oldRect =
+            image.getBoundingClientRect();
+
+        const bodyRect =
+            body.getBoundingClientRect();
+
+        if (
+            oldRect.width > 0 &&
+            oldRect.height > 0
+        ) {
+
+            const centerX =
+                bodyRect.left +
+                body.clientWidth / 2;
+
+            const centerY =
+                bodyRect.top +
+                body.clientHeight / 2;
+
+            // 記錄目前視窗中心對應圖片的相對座標。
+            zoomAnchor = {
+                x: (centerX - oldRect.left) /
+                    oldRect.width,
+
+                y: (centerY - oldRect.top) /
+                    oldRect.height
+            };
+        }
+    }
+
+    // =====================================================
+    // 二、保留原本圖片尺寸及旋轉計算
+    // =====================================================
+
+    const displayWidth = Math.max(
+        1,
+        Math.round(
+            image.naturalWidth * filePreviewScale
+        )
+    );
+
+    const displayHeight = Math.max(
+        1,
+        Math.round(
+            image.naturalHeight * filePreviewScale
+        )
+    );
+
+    const isSideways =
+        Math.abs(filePreviewRotation % 180) === 90;
 
     image.style.width = `${displayWidth}px`;
     image.style.height = `${displayHeight}px`;
-    image.style.transform = `rotate(${filePreviewRotation}deg)`;
-    image.style.transformOrigin = 'center center';
+
+    image.style.transform =
+        `rotate(${filePreviewRotation}deg)`;
+
+    image.style.transformOrigin =
+        'center center';
 
     if (isSideways) {
-        const horizontalMargin = Math.max(0, (displayHeight - displayWidth) / 2);
-        const verticalMargin = Math.max(0, (displayWidth - displayHeight) / 2);
-        image.style.margin = `${verticalMargin}px ${horizontalMargin}px`;
+
+        const horizontalMargin = Math.max(
+            0,
+            (displayHeight - displayWidth) / 2
+        );
+
+        const verticalMargin = Math.max(
+            0,
+            (displayWidth - displayHeight) / 2
+        );
+
+        image.style.margin =
+            `${verticalMargin}px ${horizontalMargin}px`;
+
     } else {
+
         image.style.margin = '';
     }
 
+    // 保留原有的圖片縮放狀態與百分比顯示。
     imagePreviewScale = filePreviewScale;
     imagePreviewDefaultScale = filePreviewDefaultScale;
+
     updateFilePreviewZoomLabel();
+
+    // =====================================================
+    // 三、縮放後補償水平及垂直捲動位置
+    // =====================================================
+
+    if (zoomAnchor && body) {
+
+        const newRect =
+            image.getBoundingClientRect();
+
+        const bodyRect =
+            body.getBoundingClientRect();
+
+        const centerX =
+            bodyRect.left +
+            body.clientWidth / 2;
+
+        const centerY =
+            bodyRect.top +
+            body.clientHeight / 2;
+
+        // 水平補償：維持原本閱讀中心。
+        body.scrollLeft +=
+            newRect.left +
+            zoomAnchor.x * newRect.width -
+            centerX;
+
+        // 垂直補償：維持原本閱讀位置。
+        body.scrollTop +=
+            newRect.top +
+            zoomAnchor.y * newRect.height -
+            centerY;
+    }
 }
 
 function applyPreviewFrameScale() {
@@ -32075,53 +33797,198 @@ function applyPreviewFrameScale() {
 }
 
 function applyPreviewPdfScale(options = {}) {
+
     const { body, pdfPages } = getFilePreviewElements();
+
     if (!pdfPages) return;
 
-    const preserveScroll = options.preserveScroll !== false;
-    const baseScale = filePreviewDefaultScale || 1;
-    const relativeScale = Math.max(0.05, filePreviewScale / baseScale);
-    const previousRelativeScale = filePreviewPdfAppliedRelativeScale || 1;
+    const preserveScroll =
+        options.preserveScroll !== false;
 
-    let anchorX = null;
-    let anchorY = null;
+    const baseScale =
+        filePreviewDefaultScale || 1;
 
-    if (preserveScroll && body) {
-        anchorX = (body.scrollLeft + (body.clientWidth / 2)) / previousRelativeScale;
-        anchorY = (body.scrollTop + (body.clientHeight / 2)) / previousRelativeScale;
+    const relativeScale = Math.max(
+        0.05,
+        filePreviewScale / baseScale
+    );
+
+    const shells = Array.from(
+        pdfPages.querySelectorAll(
+            '.pdf-preview-page-shell'
+        )
+    );
+
+    // =====================================================
+    // 一、縮放前記錄目前閱讀位置
+    // =====================================================
+
+    let zoomAnchor = null;
+
+    if (preserveScroll && body && shells.length) {
+
+        const bodyRect =
+            body.getBoundingClientRect();
+
+        const centerX =
+            bodyRect.left + body.clientWidth / 2;
+
+        const centerY =
+            bodyRect.top + body.clientHeight / 2;
+
+        let activeShell = null;
+        let shortestDistance = Infinity;
+
+        // 找出最接近目前視窗中心的 PDF 頁面。
+        shells.forEach(shell => {
+
+            const rect =
+                shell.getBoundingClientRect();
+
+            const distance = Math.max(
+                rect.top - centerY,
+                0,
+                centerY - rect.bottom
+            );
+
+            if (distance < shortestDistance) {
+
+                shortestDistance = distance;
+                activeShell = shell;
+
+            }
+        });
+
+        // 記錄視窗中心相對於該 PDF 頁面的座標。
+        if (activeShell) {
+
+            const rect =
+                activeShell.getBoundingClientRect();
+
+            zoomAnchor = {
+
+                shell: activeShell,
+
+                x: rect.width > 0
+                    ? (centerX - rect.left) / rect.width
+                    : 0.5,
+
+                y: rect.height > 0
+                    ? (centerY - rect.top) / rect.height
+                    : 0.5
+
+            };
+        }
     }
 
-    pdfPages.style.gap = `${Math.max(10, Math.round(18 * relativeScale))}px`;
+    // =====================================================
+    // 二、沿用原有 PDF 頁面縮放方式
+    // =====================================================
 
-    pdfPages.querySelectorAll('.pdf-preview-page-shell').forEach(shell => {
-        const baseWidth = Number(shell.dataset.baseWidth || shell.offsetWidth || 1);
-        const baseHeight = Number(shell.dataset.baseHeight || shell.offsetHeight || 1);
-        const scaledWidth = Math.max(1, Math.round(baseWidth * relativeScale));
-        const scaledHeight = Math.max(1, Math.round(baseHeight * relativeScale));
+    pdfPages.style.gap =
+        `${Math.max(10, Math.round(18 * relativeScale))}px`;
 
-        shell.style.width = `${scaledWidth}px`;
-        shell.style.height = `${scaledHeight}px`;
+    shells.forEach(shell => {
 
-        const canvas = shell.querySelector('.pdf-preview-page-canvas');
+        const baseWidth = Number(
+            shell.dataset.baseWidth ||
+            shell.offsetWidth ||
+            1
+        );
+
+        const baseHeight = Number(
+            shell.dataset.baseHeight ||
+            shell.offsetHeight ||
+            1
+        );
+
+        const scaledWidth = Math.max(
+            1,
+            Math.round(baseWidth * relativeScale)
+        );
+
+        const scaledHeight = Math.max(
+            1,
+            Math.round(baseHeight * relativeScale)
+        );
+
+        shell.style.width =
+            `${scaledWidth}px`;
+
+        shell.style.height =
+            `${scaledHeight}px`;
+
+        const canvas = shell.querySelector(
+            '.pdf-preview-page-canvas'
+        );
+
         if (canvas) {
-            canvas.style.width = `${scaledWidth}px`;
-            canvas.style.height = `${scaledHeight}px`;
+
+            canvas.style.width =
+                `${scaledWidth}px`;
+
+            canvas.style.height =
+                `${scaledHeight}px`;
+
         }
 
-        const badge = shell.querySelector('.pdf-preview-page-number');
+        // 保留原有 PDF 頁碼大小調整。
+        const badge = shell.querySelector(
+            '.pdf-preview-page-number'
+        );
+
         if (badge) {
-            const badgeScale = Math.max(0.72, Math.min(1, 1 / relativeScale));
-            badge.style.transform = `scale(${badgeScale})`;
-            badge.style.transformOrigin = 'top right';
+
+            const badgeScale = Math.max(
+                0.72,
+                Math.min(1, 1 / relativeScale)
+            );
+
+            badge.style.transform =
+                `scale(${badgeScale})`;
+
+            badge.style.transformOrigin =
+                'top right';
         }
     });
 
-    filePreviewPdfAppliedRelativeScale = relativeScale;
+    filePreviewPdfAppliedRelativeScale =
+        relativeScale;
+
     updateFilePreviewZoomLabel();
 
-    if (preserveScroll && body && Number.isFinite(anchorX) && Number.isFinite(anchorY)) {
-        body.scrollLeft = Math.max(0, (anchorX * relativeScale) - (body.clientWidth / 2));
-        body.scrollTop = Math.max(0, (anchorY * relativeScale) - (body.clientHeight / 2));
+    // =====================================================
+    // 三、縮放後恢復原本的視窗中心位置
+    // =====================================================
+
+    if (zoomAnchor && body) {
+
+        // 重新取得 PDF 頁面放大後的實際座標。
+        const nextRect =
+            zoomAnchor.shell.getBoundingClientRect();
+
+        const bodyRect =
+            body.getBoundingClientRect();
+
+        const centerX =
+            bodyRect.left + body.clientWidth / 2;
+
+        const centerY =
+            bodyRect.top + body.clientHeight / 2;
+
+        // 水平方向：
+        // 依實際頁面位置補償，不使用單純倍率公式。
+        body.scrollLeft +=
+            nextRect.left +
+            zoomAnchor.x * nextRect.width -
+            centerX;
+
+        // 垂直方向：
+        // 保留正在閱讀的頁面及所在位置。
+        body.scrollTop +=
+            nextRect.top +
+            zoomAnchor.y * nextRect.height -
+            centerY;
     }
 }
 
@@ -32136,8 +34003,38 @@ function schedulePreviewPdfScaleApply() {
     });
 }
 
+function getFilePreviewScaleLimits() {
+    const baseScale = Math.max(
+        0.01,
+        filePreviewDefaultScale || 1
+    );
+
+    const isMobile = window.matchMedia(
+        '(max-width: 900px), (hover: none) and (pointer: coarse)'
+    ).matches;
+
+    return {
+        min: Math.max(
+            0.005,
+            baseScale * 0.5
+        ),
+        max: Math.min(
+            4,
+            baseScale * (isMobile ? 2 : 4)
+        )
+    };
+}
+
 function setFilePreviewScale(nextScale) {
-    filePreviewScale = clampPreviewScale(nextScale);
+    const limits = filePreviewMode === 'image'
+        ? getFilePreviewScaleLimits()
+        : { min: 0.25, max: 4 };
+
+    filePreviewScale = clampPreviewScale(
+        nextScale,
+        limits.min,
+        limits.max
+    );
 
     if (filePreviewMode === 'image') {
         applyPreviewImageScale();
@@ -32264,6 +34161,7 @@ async function renderPdfPreviewPages() {
     if (!pdfPages || !filePreviewPdfDocument) return;
 
     const renderSerial = ++filePreviewPdfRenderSerial;
+    filePreviewPdfPrintReady = false;
     const pdf = filePreviewPdfDocument;
     const scale = filePreviewScale;
     const outputScale = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2.5);
@@ -32314,6 +34212,11 @@ async function renderPdfPreviewPages() {
                 transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null
             }).promise;
         }
+
+        if (renderSerial === filePreviewPdfRenderSerial) {
+            filePreviewPdfPrintReady = true;
+        }
+
     } catch (err) {
         if (renderSerial === filePreviewPdfRenderSerial) {
             console.warn('PDF preview render failed', err);
@@ -32405,6 +34308,42 @@ function openPdfPreviewFallback(file) {
     setFilePreviewLoading(false);
 }
 
+function refreshImagePreviewForViewport() {
+    if (filePreviewMode !== 'image') return;
+
+    const { modal, image, body } = getFilePreviewElements();
+
+    if (
+        !modal ||
+        modal.classList.contains('hidden') ||
+        !image ||
+        !image.naturalWidth ||
+        !image.naturalHeight
+    ) {
+        return;
+    }
+
+    const baseScale = getImageFitPreviewScale(image);
+
+    // 只有寬螢幕且具備精確滑鼠指標才使用桌機設定。
+    const isDesktopPreview = window.matchMedia(
+        '(min-width: 901px) and (hover: hover) and (pointer: fine)'
+    ).matches;
+
+    filePreviewDefaultScale = baseScale;
+
+    filePreviewScale = isDesktopPreview
+        ? Math.min(baseScale * 1.25, 1.25)
+        : baseScale;
+
+    applyPreviewImageScale();
+
+    if (body) {
+        body.scrollTop = 0;
+        body.scrollLeft = 0;
+    }
+}
+
 function openImagePreview(file) {
     const { frame, image, pdfPages, toolbar } = getFilePreviewElements();
 
@@ -32419,31 +34358,61 @@ function openImagePreview(file) {
     if (!image) return;
 
     setFilePreviewLoading(true, '圖片載入中...');
-    image.classList.remove('hidden');
-image.onload = () => {
-    const baseImageScale = getImageFitPreviewScale(image);
-    const isDesktopPreview = window.matchMedia('(min-width: 901px)').matches;
 
-    /*
-     * 附件圖片預覽初始比例：
-     * 1. 手機版：維持適合畫面，避免超出與誤觸。
-     * 2. 桌機版：保留略放大，避免圖片太小。
-     * 3. 不再使用 1.6 倍，避免開啟後跳到 160% 以上造成操作不穩。
-     */
-    filePreviewDefaultScale = baseImageScale;
-    filePreviewScale = isDesktopPreview
-        ? Math.min(baseImageScale * 1.25, 1.25)
-        : baseImageScale;
+    // 圖片載入與尺寸計算完成前先保持隱藏。
+    image.classList.add('hidden');
 
-    applyPreviewImageScale();
-    setFilePreviewLoading(false);
-};
+    image.onload = () => {
+        if (filePreviewMode !== 'image') {
+            return;
+        }
+
+        refreshImagePreviewForViewport();
+
+        // 比例計算完成後才顯示圖片。
+        image.classList.remove('hidden');
+
+        setFilePreviewLoading(false);
+    };
     image.onerror = () => {
         setFilePreviewLoading(false);
         alert('圖片預覽載入失敗，請確認檔案是否完整。');
     };
     image.src = file.data;
 }
+
+// 手機旋轉及視窗尺寸變更後，重新計算圖片比例。
+function scheduleImagePreviewViewportFit() {
+    if (filePreviewMode !== 'image') {
+        return;
+    }
+
+    clearTimeout(filePreviewImageViewportTimer);
+
+    filePreviewImageViewportTimer = setTimeout(() => {
+        filePreviewImageViewportTimer = null;
+
+        requestAnimationFrame(() => {
+            if (filePreviewMode === 'image') {
+                refreshImagePreviewForViewport();
+            }
+        });
+
+    }, 180);
+}
+
+// 桌機視窗尺寸變更。
+window.addEventListener(
+    'resize',
+    scheduleImagePreviewViewportFit,
+    { passive: true }
+);
+
+// 手機直式、橫式切換。
+window.addEventListener(
+    'orientationchange',
+    scheduleImagePreviewViewportFit
+);
 
 function viewFileDirectly(file, subtitleText = '') {
     const { modal, title, subtitle, badge, toolbar } = getFilePreviewElements();
@@ -32474,6 +34443,8 @@ function viewFileDirectly(file, subtitleText = '') {
 
     if (toolbar) toolbar.classList.remove('hidden');
 
+    updateFilePreviewPrintButton();
+
     document.body.classList.add('file-preview-open');
     modal.classList.remove('hidden');
 
@@ -32494,11 +34465,330 @@ function viewFileDirectly(file, subtitleText = '') {
 
 function closeFilePreviewModal() {
     const { modal } = getFilePreviewElements();
+
+    cleanupAttachmentPrint();
+
     resetFilePreviewContent();
 
     if (modal) modal.classList.add('hidden');
     document.body.classList.remove('file-preview-open');
 }
+
+// =========================================================
+// OSHIS｜附件專用列印
+// 僅管理者、使用者可用。
+// =========================================================
+
+function cleanupAttachmentPrint() {
+    document.getElementById(
+        'oshis-attachment-print-root'
+    )?.remove();
+
+    document.getElementById(
+        'oshis-attachment-print-page-style'
+    )?.remove();
+
+    document.body.classList.remove(
+        'oshis-attachment-print'
+    );
+}
+
+let oshisAttachmentPrintPreparing = false;
+
+async function printPreviewAttachment() {
+
+    // 避免連續點擊造成重複列印。
+    if (oshisAttachmentPrintPreparing) return;
+
+    // 列印函式本身也要檢查權限。
+    if (!canPrintPreviewAttachment()) {
+        updateFilePreviewPrintButton();
+        return;
+    }
+
+    const { modal, image, pdfPages } =
+        getFilePreviewElements();
+
+    if (
+        !modal ||
+        modal.classList.contains('hidden')
+    ) {
+        return;
+    }
+
+    const isImage =
+        filePreviewMode === 'image';
+
+    const isPdf =
+        filePreviewMode === 'pdf';
+
+    // 圖片尚未載入完成時禁止列印。
+    if (
+        isImage &&
+        (
+            !image ||
+            !image.complete ||
+            !image.naturalWidth
+        )
+    ) {
+        alert('圖片尚未載入完成，請稍後再列印。');
+        return;
+    }
+
+    // PDF.js 備援模式不直接列印 iframe。
+    if (filePreviewMode === 'pdf-frame') {
+        alert(
+            '目前 PDF 使用瀏覽器備援預覽，無法使用內建附件列印。'
+        );
+        return;
+    }
+
+    // 取得 PDF.js 已繪製的 Canvas。
+    const pdfCanvases = isPdf && pdfPages
+        ? Array.from(
+            pdfPages.querySelectorAll(
+                '.pdf-preview-page-canvas'
+            )
+        )
+        : [];
+
+    // PDF 必須全部頁面完成繪製。
+    if (
+        isPdf &&
+        (
+            !filePreviewPdfPrintReady ||
+            !filePreviewPdfDocument ||
+            pdfCanvases.length !==
+                filePreviewPdfDocument.numPages ||
+            pdfCanvases.some(
+                canvas =>
+                    !canvas.width ||
+                    !canvas.height
+            )
+        )
+    ) {
+        alert(
+            'PDF 頁面尚未全部載入完成，請稍後再列印。'
+        );
+        return;
+    }
+
+    if (!isImage && !isPdf) return;
+
+    // 清除之前可能殘留的列印內容。
+    cleanupAttachmentPrint();
+
+    const firstWidth = isImage
+        ? image.naturalWidth
+        : pdfCanvases[0].width;
+
+    const firstHeight = isImage
+        ? image.naturalHeight
+        : pdfCanvases[0].height;
+
+    // 依附件方向設定 A4 直式或橫式。
+    const landscape =
+        firstWidth > firstHeight;
+
+    const maxHeight = landscape
+        ? '185mm'
+        : '270mm';
+
+    // 記錄目前的附件，避免等待期間切換附件。
+    const previewRenderSerial =
+        filePreviewPdfRenderSerial;
+
+    const previewImageSrc = isImage
+        ? image.src
+        : '';
+
+    oshisAttachmentPrintPreparing = true;
+
+    try {
+
+        // 建立獨立列印區。
+        const printRoot =
+            document.createElement('div');
+
+        printRoot.id =
+            'oshis-attachment-print-root';
+
+        const addPage = (src, number) => {
+
+            const page =
+                document.createElement('section');
+
+            page.className =
+                'oshis-attachment-print-page';
+
+            const picture =
+                document.createElement('img');
+
+            picture.src = src;
+            picture.alt =
+                `附件第 ${number} 頁`;
+
+            picture.style.maxHeight =
+                maxHeight;
+
+            page.appendChild(picture);
+            printRoot.appendChild(page);
+        };
+
+        if (isImage) {
+
+            // 使用完整圖片來源。
+            addPage(
+                image.currentSrc || image.src,
+                1
+            );
+
+        } else {
+
+            // PDF 每頁轉成列印圖片。
+            pdfCanvases.forEach(
+                (canvas, index) => {
+
+                    addPage(
+                        canvas.toDataURL('image/png'),
+                        index + 1
+                    );
+
+                }
+            );
+        }
+
+        // 附件專用紙張設定。
+        const pageStyle =
+            document.createElement('style');
+
+        pageStyle.id =
+            'oshis-attachment-print-page-style';
+
+        pageStyle.textContent = `@page {
+            size: A4 ${landscape ? 'landscape' : 'portrait'};
+            margin: 10mm;
+            @bottom-center { content: none; }
+        }`;
+
+        document.head.appendChild(pageStyle);
+        document.body.appendChild(printRoot);
+
+        document.body.classList.add(
+            'oshis-attachment-print'
+        );
+
+        // 等待全部列印圖片完成解碼。
+        // 避免 PDF 第一次列印預覽空白。
+        const printImages = Array.from(
+            printRoot.querySelectorAll('img')
+        );
+
+        await Promise.all(
+            printImages.map(async img => {
+
+                if (
+                    typeof img.decode ===
+                    'function'
+                ) {
+                    await img.decode();
+                    return;
+                }
+
+                // 相容沒有 decode() 的瀏覽器。
+                await new Promise(
+                    (resolve, reject) => {
+
+                        if (img.complete) {
+
+                            if (img.naturalWidth > 0) {
+                                resolve();
+                            } else {
+                                reject(
+                                    new Error(
+                                        '附件列印圖片載入失敗'
+                                    )
+                                );
+                            }
+
+                            return;
+                        }
+
+                        img.addEventListener(
+                            'load',
+                            resolve,
+                            { once: true }
+                        );
+
+                        img.addEventListener(
+                            'error',
+                            () => {
+                                reject(
+                                    new Error(
+                                        '附件列印圖片載入失敗'
+                                    )
+                                );
+                            },
+                            { once: true }
+                        );
+                    }
+                );
+            })
+        );
+
+        // 等待瀏覽器完成版面更新。
+        await new Promise(resolve => {
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(resolve);
+            });
+
+        });
+
+        // 列印前再次確認附件及權限。
+        if (
+            !canPrintPreviewAttachment() ||
+            modal.classList.contains('hidden') ||
+            printRoot.parentNode !==
+                document.body ||
+            filePreviewPdfRenderSerial !==
+                previewRenderSerial ||
+            (
+                isImage &&
+                image.src !== previewImageSrc
+            )
+        ) {
+            cleanupAttachmentPrint();
+            return;
+        }
+
+        // 全部準備完成後才列印。
+        window.print();
+
+    } catch (error) {
+
+        console.error(
+            '附件列印準備失敗',
+            error
+        );
+
+        cleanupAttachmentPrint();
+
+        alert(
+            '無法準備附件列印，請確認檔案是否完整。'
+        );
+
+    } finally {
+
+        oshisAttachmentPrintPreparing = false;
+    }
+}
+
+// 列印完成後清除附件專用 DOM 及紙張樣式。
+window.addEventListener(
+    'afterprint',
+    cleanupAttachmentPrint
+);
 
 function closeFilePreviewByBackdrop(event) {
     if (event && event.target && event.target.id === 'file-preview-modal') {
@@ -35564,6 +37854,20 @@ async function exportPreviewData() {
     }
 
 
+    /*
+     * 避免遺漏尚未正式加入 Session 的改善附件。
+     */
+    if (
+        Array.isArray(pendingInspectionAttachmentFiles) &&
+        pendingInspectionAttachmentFiles.length > 0
+    ) {
+        showToast(
+            '請先完成改善回覆附件上傳，或清除選取的檔案後再匯出預覽。',
+            'error'
+        );
+        return;
+    }
+
     try {
 
         /*
@@ -35706,7 +38010,7 @@ async function exportPreviewData() {
                 );
 
             },
-            1000
+            10000
         );
 
 
@@ -35784,7 +38088,28 @@ if (hasUnsavedDraftChanges()) {
     return;
 }
 
+/*
+ * 尚未完成的改善附件不應被漏掉。
+ */
+if (
+    Array.isArray(pendingInspectionAttachmentFiles) &&
+    pendingInspectionAttachmentFiles.length > 0
+) {
+    showToast(
+        '請先完成改善回覆附件上傳，或清除選取的檔案後再匯出資料。',
+        'error'
+    );
+    return;
+}
+
 try {
+
+    /*
+     * 記住開始匯出時的正式資料狀態。
+     */
+    const exportSnapshot =
+        hazardWorkspaceSessionSnapshot();
+
     /*
      * 正式本機 JSON
      * 必須是一份真正可獨立保存的備份，
@@ -35850,18 +38175,28 @@ link.click();
 link.remove();
 
 /*
- * 最新正式 Session
- * 已完成 JSON 匯出。
+ * 如果附件轉換與下載準備期間，
+ * 使用者又修改了正式資料，
+ * 本次 JSON 不代表最新版本。
  */
+const sessionUnchanged =
+    hazardWorkspaceSessionSnapshot() ===
+    exportSnapshot;
+
 sessionNeedsExport =
-    false;
+    !sessionUnchanged;
 
 setTimeout(() => {
             URL.revokeObjectURL(url);
-        }, 1000);
+        }, 10000);
 
         showToast(
-            "統一資料已匯出完成。"
+            sessionUnchanged
+                ? '統一資料已匯出完成。'
+                : '資料檔案已開始下載，但工作內容在匯出期間發生變更，請再次匯出最新資料。',
+            sessionUnchanged
+                ? 'success'
+                : 'error'
         );
     } catch (error) {
         console.error(error);
